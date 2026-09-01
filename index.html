@@ -15,7 +15,7 @@
     --amber:#ffb454;
     --white:#eaf6fb;
     --danger:#ff5d5d;
-    --green:#6dffb0;
+    --violet:#b98bff;
     --font-body:'Consolas','SF Mono',monospace;
   }
 
@@ -68,7 +68,7 @@
   #topbar{
     position:absolute;top:16px;left:50%;transform:translateX(-50%);
     display:flex;gap:22px;align-items:baseline;flex-wrap:wrap;justify-content:center;
-    font-size:10.5px;letter-spacing:2px; color:var(--cyan-dim); max-width:60%;
+    font-size:10.5px;letter-spacing:2px; color:var(--cyan-dim); max-width:56%;
   }
   #topbar .brand{ color:var(--cyan); font-size:13px; letter-spacing:4px; }
   #clock{color:var(--white);}
@@ -86,11 +86,8 @@
   }
   .hud-toggle.on{color:var(--amber);border-color:var(--amber);}
   #skeletonToggle{right:14px;}
-  #handsToggle{right:112px;}
-  #soundToggle{right:216px;}
+  #soundToggle{right:112px;}
 
-  /* ---- narrow / portrait phones: stack the toggles instead of spreading them
-       across the top, and shrink text so nothing gets pushed off-canvas ---- */
   @media (max-width: 600px){
     #topbar{ max-width:56%; font-size:8.5px; gap:8px; top:12px; }
     #topbar .brand{ font-size:11px; letter-spacing:2px; }
@@ -99,11 +96,10 @@
       font-size:7.5px; padding:4px 6px; letter-spacing:0.6px;
     }
     #soundToggle{ top:10px; }
-    #handsToggle{ top:34px; }
-    #skeletonToggle{ top:58px; }
+    #skeletonToggle{ top:34px; }
     #statusline{ font-size:8px; bottom:10px; max-width:98%; line-height:1.5; }
     #modelState{ font-size:9px; bottom:38px; padding:3px 8px; }
-    .panel{ width:180px; }
+    .panel{ width:170px; }
     .panel .head{ font-size:8.5px; padding:5px 6px; }
     .panel .body{ font-size:9px; padding:7px; }
     .panel .headctl button{ width:16px;height:16px; font-size:8px; }
@@ -142,7 +138,7 @@
 
   .panel{
     position:absolute;
-    width:220px;
+    width:210px;
     background:linear-gradient(160deg, rgba(7,26,34,0.72), rgba(4,14,19,0.78));
     border:1px solid var(--cyan-dim);
     box-shadow:0 0 18px rgba(79,227,255,0.12), inset 0 0 24px rgba(79,227,255,0.04);
@@ -153,14 +149,11 @@
     transform-origin:center center;
     pointer-events:auto;
   }
-  .panel.shape-hex{ clip-path:polygon(6% 0,94% 0,100% 20%,100% 80%,94% 100%,6% 100%,0 80%,0 20%); }
   .panel.shape-round{ clip-path:none; border-radius:16px; }
-  .panel.shape-angular{ clip-path:polygon(0 0,100% 0,100% 85%,85% 100%,0 100%); }
 
   .panel.hover{ border-color:#8fe9ff; box-shadow:0 0 16px rgba(143,233,255,0.25); }
   .panel.armed{ border-color:var(--amber); box-shadow:0 0 26px rgba(255,180,84,0.35), inset 0 0 24px rgba(255,180,84,0.08); }
-  .panel.locked{ border-color:var(--green); }
-  .panel.locked .lockbtn{ color:var(--green); }
+  .panel.armed2{ border-color:var(--violet); box-shadow:0 0 26px rgba(185,139,255,0.35); }
   .panel.theme-amber{ border-color:var(--amber); }
   .panel.theme-amber .head{ color:var(--amber); }
   .panel.theme-amber .dot{ background:var(--amber); box-shadow:0 0 6px var(--amber); }
@@ -168,14 +161,14 @@
   .panel.theme-red .head{ color:var(--danger); }
   .panel.theme-red .dot{ background:var(--danger); box-shadow:0 0 6px var(--danger); }
   .panel.theme-red .bar-fill{ background:var(--danger); box-shadow:0 0 6px var(--danger); }
-  .panel.theme-green .head{ color:var(--green); }
-  .panel.theme-green .dot{ background:var(--green); box-shadow:0 0 6px var(--green); }
-  .panel.theme-green .bar-fill{ background:var(--green); box-shadow:0 0 6px var(--green); }
+  .panel.theme-green .head{ color:var(--green,#6dffb0); }
+  .panel.theme-green .dot{ background:#6dffb0; box-shadow:0 0 6px #6dffb0; }
+  .panel.theme-green .bar-fill{ background:#6dffb0; box-shadow:0 0 6px #6dffb0; }
 
   .panel .head{
     display:flex;justify-content:space-between;align-items:center;
     padding:6px 8px;
-    border-bottom:1px solid var(--line-dim, #0f3a4a);
+    border-bottom:1px solid #0f3a4a;
     font-size:9.5px;letter-spacing:1.6px;
     color:var(--cyan);
     cursor:grab;
@@ -200,9 +193,19 @@
     cursor:nwse-resize; touch-action:none;
   }
 
-  #spawnMenu{ position:absolute; display:none; pointer-events:none; }
+  .shape-visual{
+    width:80%; aspect-ratio:1/1; margin:14px auto;
+    border:2px solid var(--cyan);
+    background:rgba(79,227,255,0.06);
+    box-shadow:0 0 20px rgba(79,227,255,0.25), inset 0 0 20px rgba(79,227,255,0.08);
+  }
+  .shape-visual.circle{ border-radius:50%; }
+  .shape-visual.square{ border-radius:4px; }
+  .panel.theme-amber .shape-visual{ border-color:var(--amber); box-shadow:0 0 20px rgba(255,180,84,0.3), inset 0 0 20px rgba(255,180,84,0.1); background:rgba(255,180,84,0.06); }
+
+  .spawn-menu-instance{ position:absolute; display:none; pointer-events:none; }
   .spawn-opt{
-    position:absolute; width:70px;height:70px;
+    position:absolute; width:68px;height:68px;
     border:1px solid var(--cyan-dim); border-radius:50%;
     display:flex;align-items:center;justify-content:center; text-align:center;
     font-size:8px;letter-spacing:1px; color:var(--cyan-dim);
@@ -249,17 +252,15 @@
       <span id="clock">--:--:--</span>
     </div>
     <button id="soundToggle" class="hud-toggle off">SOUND: OFF</button>
-    <button id="handsToggle" class="hud-toggle off">2-HAND: OFF</button>
     <button id="skeletonToggle" class="hud-toggle off">SKEL: OFF</button>
     <div id="modelState">LOADING HAND-TRACKING MODEL…</div>
     <div id="statusline">
-      <div><b>OPEN HAND</b> HOLD → MENU &nbsp;·&nbsp; <b>PINCH</b> → GRAB &nbsp;·&nbsp; <b>FIST</b> ON PANEL → DISMISS &nbsp;·&nbsp; <b>SWIPE</b> → CLEAR ALL &nbsp;·&nbsp; <b>2-HAND PINCH</b> → RESIZE &nbsp;·&nbsp; TOUCH PANELS DIRECTLY TOO</div>
+      <div><b>OPEN HAND</b> HOLD → MENU (either hand) &nbsp;·&nbsp; <b>PINCH</b> → GRAB &nbsp;·&nbsp; <b>FIST</b> ON PANEL → DISMISS &nbsp;·&nbsp; <b>BOTH HANDS PINCH SAME PANEL</b> → RESIZE &nbsp;·&nbsp; TOUCH WORKS TOO</div>
       <div id="handState">NO HAND DETECTED</div>
     </div>
   </div>
 
   <div id="panelLayer"></div>
-  <div id="spawnMenu"></div>
   <div id="trashZone">DROP<br>TO<br>DELETE</div>
 
   <div id="camPermission">
@@ -278,8 +279,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   const tapToStart = document.getElementById('tapToStart');
   const canvas = document.getElementById('gestureCanvas');
   const ctx = canvas.getContext('2d');
+  const stage = document.getElementById('stage');
   const panelLayer = document.getElementById('panelLayer');
-  const spawnMenu = document.getElementById('spawnMenu');
   const handStateEl = document.getElementById('handState');
   const linkStateEl = document.getElementById('linkState');
   const clockEl = document.getElementById('clock');
@@ -287,13 +288,11 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   const enableBtn = document.getElementById('enableBtn');
   const errMsg = document.getElementById('errMsg');
   const skeletonToggle = document.getElementById('skeletonToggle');
-  const handsToggle = document.getElementById('handsToggle');
   const soundToggle = document.getElementById('soundToggle');
   const modelState = document.getElementById('modelState');
   const trashZone = document.getElementById('trashZone');
 
   let showSkeleton = false;
-  let twoHandMode = false;
   let soundOn = false;
   let currentStream = null;
   let audioCtx = null;
@@ -324,12 +323,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     soundToggle.classList.toggle('on', soundOn);
     if(soundOn) playBeep(880, 0.08);
   });
-  handsToggle.addEventListener('click', async ()=>{
-    twoHandMode = !twoHandMode;
-    handsToggle.textContent = '2-HAND: ' + (twoHandMode ? 'ON' : 'OFF');
-    handsToggle.classList.toggle('on', twoHandMode);
-    await rebuildLandmarker();
-  });
 
   const HAND_CONNECTIONS = [
     [0,1],[1,2],[2,3],[3,4],
@@ -353,40 +346,35 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   window.addEventListener('pagehide', stopStream);
   window.addEventListener('beforeunload', stopStream);
 
-  // ---------------- Panel content templates ----------------
+  // ---------------- Panel content templates (trimmed to reduce clutter) ----------------
   const TEMPLATES = [
     { id:'power', label:'POWER CORE', rows:[['OUTPUT','118%'],['TEMP','612K'],['STABILITY','NOMINAL']], bar:92, theme:'' },
     { id:'sys', label:'SYSTEM STATUS', rows:[['CPU LOAD','34%'],['UPTIME','04:12:09'],['THREADS','128 ACTIVE']], bar:34, theme:'' },
     { id:'comms', label:'COMMS', rows:[['SIGNAL','STRONG'],['LATENCY','12ms'],['CHANNEL','ENCRYPTED']], bar:78, theme:'' },
-    { id:'scan', label:'ENV SCAN', rows:[['OBJECTS','3 TRACKED'],['THREAT','NONE'],['RANGE','40m']], bar:15, theme:'' },
     { id:'nav', label:'NAV / GPS', rows:[['ALT','142m'],['HEADING','047°'],['SPEED','0 m/s']], bar:60, theme:'' },
-    { id:'bio', label:'BIOMETRICS', rows:[['HEART RATE','71 bpm'],['O2','98%'],['STRESS','LOW']], bar:45, theme:'green' },
     { id:'weap', label:'WEAPONS', rows:[['LOADOUT','REPULSORS'],['CHARGE','100%'],['SAFETY','ON']], bar:100, theme:'red' },
-    { id:'target', label:'TARGET LOCK', rows:[['TARGETS','0 LOCKED'],['MODE','STANDBY'],['FOV','120°']], bar:10, theme:'red' },
-    { id:'medical', label:'MEDICAL', rows:[['PULSE','NORMAL'],['INJURY','NONE'],['FATIGUE','LOW']], bar:20, theme:'green' },
-    { id:'audio', label:'AUDIO FEED', rows:[['SOURCE','AMBIENT'],['NOISE FLOOR','-42dB'],['EQ','FLAT']], bar:55, theme:'' },
-    { id:'weather', label:'WEATHER', rows:[['TEMP','21°C'],['WIND','8 km/h'],['VISIBILITY','GOOD']], bar:70, theme:'amber' },
-    { id:'alert', label:'ALERT LOG', rows:[['CRITICAL','0'],['WARNING','2'],['INFO','14']], bar:5, theme:'amber' },
-    { id:'map', label:'TACTICAL MAP', rows:[['ZONE','SECTOR 7'],['UNITS','1'],['STATUS','CLEAR']], bar:40, theme:'' },
-    { id:'defense', label:'DEFENSE GRID', rows:[['SHIELDS','ONLINE'],['INTEGRITY','100%'],['DRAIN','LOW']], bar:100, theme:'amber' },
+    { id:'bio', label:'BIOMETRICS', rows:[['HEART RATE','71 bpm'],['O2','98%'],['STRESS','LOW']], bar:45, theme:'green' },
+    { id:'circle', label:'CIRCLE', shapeOnly:'circle', theme:'' },
+    { id:'square', label:'SQUARE', shapeOnly:'square', theme:'amber' },
   ];
 
   let panelCount = 0;
   const panels = [];
-  let lastRemoved = null; // for undo
+  let lastRemoved = null;
 
-  function makeControlsHTML(){
+  function makeControlsHTML(full){
+    if(!full){
+      return `<div class="headctl"><button class="closebtn" title="close">×</button></div>`;
+    }
     return `
       <div class="headctl">
         <button class="shapebtn" title="reshape">⬡</button>
-        <button class="clonebtn" title="clone">⧉</button>
         <button class="colorbtn" title="theme">◐</button>
-        <button class="lockbtn" title="lock">🔒</button>
         <button class="closebtn" title="close">×</button>
       </div>`;
   }
 
-  const SHAPES = ['', 'shape-hex', 'shape-round', 'shape-angular'];
+  const SHAPES = ['', 'shape-round'];
   const THEMES = ['', 'theme-amber', 'theme-red', 'theme-green'];
 
   function spawnPanel(tpl, x, y, opts){
@@ -395,27 +383,39 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     const el = document.createElement('div');
     el.className = 'panel' + (tpl.theme ? ' theme-'+tpl.theme : '');
     el.dataset.id = 'p'+panelCount;
-    const pw = window.innerWidth < 600 ? 180 : 220;
+    const pw = window.innerWidth < 600 ? 170 : 210;
     const clampedX = Math.max(pw/2 + 4, Math.min(window.innerWidth - pw/2 - 4, x));
     const clampedY = Math.max(30, Math.min(window.innerHeight - 60, y));
     el.style.left = (clampedX - pw/2) + 'px';
     el.style.top = (clampedY - 20) + 'px';
-    el.innerHTML = `
-      <div class="head">
-        <span class="dot"></span>
-        <span style="flex:1;padding:0 6px;">${tpl.label}</span>
-        ${makeControlsHTML()}
-      </div>
-      <div class="body">
-        ${tpl.rows.map(r=>`<div class="row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}
-        <div class="bar-track"><div class="bar-fill" style="width:${tpl.bar}%"></div></div>
-      </div>
-      <div class="resize-handle"></div>
-    `;
+
+    if(tpl.shapeOnly){
+      el.innerHTML = `
+        <div class="head">
+          <span class="dot"></span><span style="flex:1"></span>
+          ${makeControlsHTML(false)}
+        </div>
+        <div class="shape-visual ${tpl.shapeOnly}"></div>
+        <div class="resize-handle"></div>
+      `;
+    } else {
+      el.innerHTML = `
+        <div class="head">
+          <span class="dot"></span>
+          <span style="flex:1;padding:0 6px;">${tpl.label}</span>
+          ${makeControlsHTML(true)}
+        </div>
+        <div class="body">
+          ${tpl.rows.map(r=>`<div class="row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}
+          <div class="bar-track"><div class="bar-fill" style="width:${tpl.bar}%"></div></div>
+        </div>
+        <div class="resize-handle"></div>
+      `;
+    }
     panelLayer.appendChild(el);
     const rec = {
-      el, tpl, grabbed:false, offsetX:0, offsetY:0, scale: opts.scale || 1,
-      locked:false, shapeIdx:0, themeIdx: THEMES.indexOf(tpl.theme?('theme-'+tpl.theme):'') > -1 ? THEMES.indexOf(tpl.theme?('theme-'+tpl.theme):'') : 0,
+      el, tpl, grabbed:false, grabbedBy:null, offsetX:0, offsetY:0, scale: opts.scale || 1,
+      shapeIdx:0, themeIdx:0,
       baseX: clampedX - pw/2, baseY: clampedY - 20,
       bobPhase: Math.random()*Math.PI*2,
       bobSpeed: 0.5 + Math.random()*0.4,
@@ -432,7 +432,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     const idx = panels.indexOf(p);
     if(idx>-1) panels.splice(idx,1);
     if(!silent){
-      const pw = window.innerWidth < 600 ? 180 : 220;
+      const pw = window.innerWidth < 600 ? 170 : 210;
       lastRemoved = {tpl:p.tpl, x:p.baseX+pw/2, y:p.baseY+20};
       playBeep(220,0.12,'square');
     }
@@ -460,30 +460,19 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     if(THEMES[p.themeIdx]) p.el.classList.add(THEMES[p.themeIdx]);
     playBeep(500,0.06);
   }
-  function toggleLock(p){
-    p.locked = !p.locked;
-    p.el.classList.toggle('locked', p.locked);
-    playBeep(p.locked?700:400,0.08);
-  }
-  function clonePanel(p){
-    const c = panelCenter(p);
-    const clone = spawnPanel(p.tpl, c.x+30, c.y+30, {scale:p.scale});
-    return clone;
-  }
 
-  // ---- native touch/pointer interactions per panel (works even without camera) ----
   function wirePanelInteractions(p){
     const head = p.el.querySelector('.head');
     const handle = p.el.querySelector('.resize-handle');
-    p.el.querySelector('.shapebtn').addEventListener('click', (e)=>{ e.stopPropagation(); cycleShape(p); });
-    p.el.querySelector('.clonebtn').addEventListener('click', (e)=>{ e.stopPropagation(); clonePanel(p); });
-    p.el.querySelector('.colorbtn').addEventListener('click', (e)=>{ e.stopPropagation(); cycleTheme(p); });
-    p.el.querySelector('.lockbtn').addEventListener('click', (e)=>{ e.stopPropagation(); toggleLock(p); });
-    p.el.querySelector('.closebtn').addEventListener('click', (e)=>{ e.stopPropagation(); removePanel(p); });
+    const shapebtn = p.el.querySelector('.shapebtn');
+    const colorbtn = p.el.querySelector('.colorbtn');
+    const closebtn = p.el.querySelector('.closebtn');
+    if(shapebtn) shapebtn.addEventListener('click', (e)=>{ e.stopPropagation(); cycleShape(p); });
+    if(colorbtn) colorbtn.addEventListener('click', (e)=>{ e.stopPropagation(); cycleTheme(p); });
+    if(closebtn) closebtn.addEventListener('click', (e)=>{ e.stopPropagation(); removePanel(p); });
 
     let dragging = false, sx=0, sy=0, ox=0, oy=0;
     head.addEventListener('pointerdown', (e)=>{
-      if(p.locked) return;
       dragging = true;
       head.setPointerCapture(e.pointerId);
       sx = e.clientX; sy = e.clientY;
@@ -498,7 +487,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       p.baseX = nx; p.baseY = ny;
       checkTrashHover(p);
     });
-    head.addEventListener('pointerup', (e)=>{
+    head.addEventListener('pointerup', ()=>{
       if(!dragging) return;
       dragging = false;
       maybeDropInTrash(p);
@@ -506,7 +495,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
     let resizing = false, rsx=0, rsw=0;
     handle.addEventListener('pointerdown', (e)=>{
-      if(p.locked) return;
       e.stopPropagation();
       resizing = true;
       handle.setPointerCapture(e.pointerId);
@@ -521,9 +509,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     handle.addEventListener('pointerup', ()=>{ resizing = false; });
   }
 
-  function bringToFront(p){
-    panelLayer.appendChild(p.el);
-  }
+  function bringToFront(p){ panelLayer.appendChild(p.el); }
 
   function checkTrashHover(p){
     const c = panelCenter(p);
@@ -540,8 +526,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   window.addEventListener('load', ()=>{
     const narrow = window.innerWidth < 600;
     if(narrow){
-      // stack the starter panels vertically down the middle so none of
-      // them get clipped off the sides on a portrait phone screen
       spawnPanel(TEMPLATES[1], window.innerWidth*0.5, window.innerHeight*0.22);
       spawnPanel(TEMPLATES[0], window.innerWidth*0.5, window.innerHeight*0.47);
       spawnPanel(TEMPLATES[6], window.innerWidth*0.5, window.innerHeight*0.72);
@@ -552,7 +536,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     }
   });
 
-  // idle ambient float animation for all panels not currently being manipulated
   function idleFloatLoop(){
     const t = performance.now()/1000;
     panels.forEach(p=>{
@@ -572,20 +555,21 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     }
   });
 
-  // ---------------- Gesture state ----------------
-  let smoothX=null, smoothY=null;
-  const SMOOTH = 0.35;
-  let grabbedPanel = null;
-  let hoveredPanel = null;
-  let openHandHoldStart = null;
-  let menuOpen = false;
-  let menuOrigin = {x:0,y:0};
-  let hotOptionIndex = -1;
-  let posHistory = [];
-  let swipeCooldown = 0;
-  let twoPinchActive = false;
-  let twoPinchStartDist = null;
-  let twoPinchStartScale = 1;
+  // ---------------- Dual independent hand pointers ----------------
+  function newHandState(idx){
+    const menuEl = document.createElement('div');
+    menuEl.className = 'spawn-menu-instance';
+    stage.appendChild(menuEl);
+    return {
+      idx, smoothX:null, smoothY:null,
+      grabbedPanel:null, hoveredPanel:null,
+      openHandHoldStart:null,
+      menuOpen:false, menuOrigin:{x:0,y:0}, hotOptionIndex:-1, menuEl,
+      posHistory:[], swipeCooldown:0,
+      resizingWith:null, resizeStartDist:null, resizeStartScale:1
+    };
+  }
+  const hs = [ newHandState(0), newHandState(1) ];
 
   function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
 
@@ -615,12 +599,12 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     return { x:(1-landmark.x)*window.innerWidth, y:landmark.y*window.innerHeight };
   }
 
-  function openSpawnMenu(x,y){
-    menuOpen = true; menuOrigin = {x,y};
-    spawnMenu.style.display='block';
-    spawnMenu.style.left=x+'px'; spawnMenu.style.top=y+'px';
-    spawnMenu.innerHTML='';
-    const radius = Math.max(70, Math.min(110, Math.min(window.innerWidth, window.innerHeight) * 0.24));
+  function openSpawnMenu(state, x,y){
+    state.menuOpen = true; state.menuOrigin = {x,y};
+    state.menuEl.style.display='block';
+    state.menuEl.style.left=x+'px'; state.menuEl.style.top=y+'px';
+    state.menuEl.innerHTML='';
+    const radius = Math.max(65, Math.min(105, Math.min(window.innerWidth, window.innerHeight) * 0.22));
     TEMPLATES.forEach((tpl,i)=>{
       const angle=(i/TEMPLATES.length)*Math.PI*2 - Math.PI/2;
       const ox=Math.cos(angle)*radius, oy=Math.sin(angle)*radius;
@@ -628,13 +612,13 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       opt.className='spawn-opt';
       opt.style.left=ox+'px'; opt.style.top=oy+'px';
       opt.textContent=tpl.label;
-      spawnMenu.appendChild(opt);
+      state.menuEl.appendChild(opt);
     });
   }
-  function closeSpawnMenu(){ menuOpen=false; spawnMenu.style.display='none'; hotOptionIndex=-1; }
+  function closeSpawnMenu(state){ state.menuOpen=false; state.menuEl.style.display='none'; state.hotOptionIndex=-1; }
 
-  function updateSpawnMenuHot(x,y){
-    const opts = spawnMenu.querySelectorAll('.spawn-opt');
+  function updateSpawnMenuHot(state, x,y){
+    const opts = state.menuEl.querySelectorAll('.spawn-opt');
     let best=-1, bestD=999999;
     opts.forEach((opt,i)=>{
       const r=opt.getBoundingClientRect();
@@ -644,7 +628,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       if(d<55 && d<bestD){ bestD=d; best=i; }
     });
     if(best>-1) opts[best].classList.add('hot');
-    hotOptionIndex = best;
+    state.hotOptionIndex = best;
   }
 
   function nearestPanel(x,y){
@@ -657,51 +641,61 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     return best;
   }
 
-  function updateHover(x,y){
+  function updateHover(state, x,y){
     const p = nearestPanel(x,y);
-    if(hoveredPanel && hoveredPanel!==p) hoveredPanel.el.classList.remove('hover');
-    if(p && p!==grabbedPanel) p.el.classList.add('hover'); else if(p) p.el.classList.remove('hover');
-    hoveredPanel = p;
+    if(state.hoveredPanel && state.hoveredPanel!==p) state.hoveredPanel.el.classList.remove('hover');
+    if(p && p!==state.grabbedPanel) p.el.classList.add('hover'); else if(p) p.el.classList.remove('hover');
+    state.hoveredPanel = p;
   }
 
-  function tryGrab(x,y){
+  function tryGrab(state, x,y){
     const best = nearestPanel(x,y);
-    if(best && !best.locked){
-      grabbedPanel = best;
-      best.grabbed = true;
-      best.el.classList.add('armed');
-      best.el.classList.remove('hover');
-      bringToFront(best);
-      const c = panelCenter(best);
-      best.offsetX = c.x - x;
-      best.offsetY = c.y - y;
+    if(!best) return;
+    if(best.grabbedBy !== null && best.grabbedBy !== state.idx){
+      // the other hand already holds this one — engage two-hand resize instead of stealing it
+      state.resizingWith = best;
+      const other = hs[best.grabbedBy];
+      state.resizeStartDist = dist({x, y}, {x:other.smoothX, y:other.smoothY});
+      state.resizeStartScale = best.scale;
+      return;
     }
+    state.grabbedPanel = best;
+    best.grabbed = true;
+    best.grabbedBy = state.idx;
+    best.el.classList.add(state.idx===0 ? 'armed' : 'armed2');
+    best.el.classList.remove('hover');
+    bringToFront(best);
+    const c = panelCenter(best);
+    state.offsetX = c.x - x;
+    state.offsetY = c.y - y;
   }
-  function releaseGrab(){
-    if(grabbedPanel){
-      maybeDropInTrash(grabbedPanel);
-      if(panels.includes(grabbedPanel)){
-        grabbedPanel.grabbed=false;
-        grabbedPanel.el.classList.remove('armed');
+  function releaseGrab(state){
+    if(state.grabbedPanel){
+      maybeDropInTrash(state.grabbedPanel);
+      if(panels.includes(state.grabbedPanel)){
+        state.grabbedPanel.grabbed=false;
+        state.grabbedPanel.grabbedBy=null;
+        state.grabbedPanel.el.classList.remove('armed','armed2');
       }
-      grabbedPanel=null;
+      state.grabbedPanel=null;
       trashZone.classList.remove('active');
     }
-    twoPinchActive = false;
-    twoPinchStartDist = null;
+    state.resizingWith = null;
+    state.resizeStartDist = null;
   }
   function tryDismiss(x,y){
     for(const p of [...panels]){
-      if(p.locked) continue;
       const c = panelCenter(p);
       const d = Math.hypot(x-c.x, y-c.y);
       if(d < Math.max(c.r.width,c.r.height)*0.6) removePanel(p);
     }
   }
 
-  function drawReticle(x,y,gesture,color){
-    const colors = { pinch:'#ffb454', fist:'#ff5d5d', open:'#4fe3ff', neutral:'#4fe3ff' };
-    const c = color || colors[gesture] || '#4fe3ff';
+  function drawReticle(x,y,gesture,handIdx){
+    const baseColors = handIdx===1
+      ? { pinch:'#ffb454', fist:'#ff5d5d', open:'#b98bff', neutral:'#b98bff' }
+      : { pinch:'#ffb454', fist:'#ff5d5d', open:'#4fe3ff', neutral:'#4fe3ff' };
+    const c = baseColors[gesture] || baseColors.neutral;
     ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
     const r = gesture==='pinch' ? 10 : 18;
     ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
@@ -714,9 +708,10 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     ctx.globalAlpha = 1;
   }
 
-  function drawSkeleton(lm){
+  function drawSkeleton(lm, handIdx){
     const pts = lm.map(pt=>({x:(1-pt.x)*window.innerWidth, y:pt.y*window.innerHeight}));
-    ctx.strokeStyle = 'rgba(79,227,255,0.55)'; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = handIdx===1 ? 'rgba(185,139,255,0.55)' : 'rgba(79,227,255,0.55)';
+    ctx.lineWidth = 1.5;
     HAND_CONNECTIONS.forEach(([a,b])=>{
       ctx.beginPath(); ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); ctx.stroke();
     });
@@ -724,92 +719,112 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     pts.forEach(pt=>{ ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI*2); ctx.fill(); });
   }
 
-  function trackSwipe(x,y){
+  function trackSwipe(state, x,y){
     const now = performance.now();
-    posHistory.push({x,y,t:now});
-    posHistory = posHistory.filter(pt => now - pt.t < 260);
-    if(posHistory.length < 4) return false;
-    const first = posHistory[0], last = posHistory[posHistory.length-1];
+    state.posHistory.push({x,y,t:now});
+    state.posHistory = state.posHistory.filter(pt => now - pt.t < 260);
+    if(state.posHistory.length < 4) return false;
+    const first = state.posHistory[0], last = state.posHistory[state.posHistory.length-1];
     const dt = (last.t - first.t) / 1000;
     if(dt <= 0) return false;
     const vx = (last.x - first.x) / dt;
-    if(Math.abs(vx) > 2400 && now > swipeCooldown){ swipeCooldown = now + 900; return true; }
+    if(Math.abs(vx) > 2400 && now > state.swipeCooldown){ state.swipeCooldown = now + 900; return true; }
     return false;
+  }
+
+  function processHand(state, lm, otherHandLm){
+    const gesture = classifyGesture(lm);
+    const pos = screenPos(lm[8]);
+    if(state.smoothX===null){ state.smoothX=pos.x; state.smoothY=pos.y; }
+    else{ state.smoothX += (pos.x-state.smoothX)*0.35; state.smoothY += (pos.y-state.smoothY)*0.35; }
+
+    // two-hand resize in progress on a panel this hand doesn't primarily own
+    if(state.resizingWith){
+      if(gesture === 'pinch' && otherHandLm){
+        const otherState = hs[state.resizingWith.grabbedBy];
+        const d = dist({x:state.smoothX,y:state.smoothY}, {x:otherState.smoothX,y:otherState.smoothY});
+        if(state.resizeStartDist){
+          let scale = state.resizeStartScale * (d / state.resizeStartDist);
+          scale = Math.max(0.5, Math.min(2.2, scale));
+          state.resizingWith.scale = scale;
+          updateTransform(state.resizingWith);
+        }
+        drawReticle(state.smoothX, state.smoothY, 'pinch', state.idx);
+        return;
+      } else {
+        state.resizingWith = null;
+        state.resizeStartDist = null;
+      }
+    }
+
+    drawReticle(state.smoothX, state.smoothY, gesture, state.idx);
+    updateHover(state, state.smoothX, state.smoothY);
+
+    if(gesture === 'open' && !state.grabbedPanel){
+      if(trackSwipe(state, state.smoothX, state.smoothY)){ clearAllPanels(); closeSpawnMenu(state); }
+      if(state.openHandHoldStart===null) state.openHandHoldStart = performance.now();
+      const held = performance.now() - state.openHandHoldStart;
+      if(held > 550 && !state.menuOpen) openSpawnMenu(state, state.smoothX, state.smoothY);
+      if(state.menuOpen) updateSpawnMenuHot(state, state.smoothX, state.smoothY);
+    } else {
+      if(gesture !== 'open') state.openHandHoldStart = null;
+      state.posHistory = [];
+    }
+
+    if(gesture === 'pinch'){
+      if(state.menuOpen){
+        if(state.hotOptionIndex > -1) spawnPanel(TEMPLATES[state.hotOptionIndex], state.menuOrigin.x, state.menuOrigin.y);
+        closeSpawnMenu(state);
+      } else if(!state.grabbedPanel){
+        tryGrab(state, state.smoothX, state.smoothY);
+      } else {
+        const nx = state.smoothX + state.offsetX - state.grabbedPanel.el.offsetWidth/2;
+        const ny = state.smoothY + state.offsetY - state.grabbedPanel.el.offsetHeight/2;
+        state.grabbedPanel.el.style.left = nx + 'px';
+        state.grabbedPanel.el.style.top = ny + 'px';
+        state.grabbedPanel.baseX = nx;
+        state.grabbedPanel.baseY = ny;
+        checkTrashHover(state.grabbedPanel);
+      }
+    } else {
+      releaseGrab(state);
+      if(state.menuOpen && gesture !== 'open') closeSpawnMenu(state);
+    }
+
+    if(gesture === 'fist') tryDismiss(state.smoothX, state.smoothY);
+  }
+
+  function resetHandState(state){
+    releaseGrab(state);
+    closeSpawnMenu(state);
+    state.openHandHoldStart = null;
+    state.smoothX = state.smoothY = null;
+    state.posHistory = [];
+    if(state.hoveredPanel){ state.hoveredPanel.el.classList.remove('hover'); state.hoveredPanel = null; }
   }
 
   function onResults(results){
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    if(!results.multiHandLandmarks || results.multiHandLandmarks.length===0){
+    const hands_lm = (results.multiHandLandmarks || []);
+
+    if(hands_lm.length === 0){
       handStateEl.textContent = 'NO HAND DETECTED';
       linkStateEl.textContent = 'SEARCHING';
-      releaseGrab(); closeSpawnMenu();
-      openHandHoldStart = null; smoothX = smoothY = null; posHistory = [];
-      if(hoveredPanel){ hoveredPanel.el.classList.remove('hover'); hoveredPanel=null; }
+      resetHandState(hs[0]); resetHandState(hs[1]);
       return;
     }
     linkStateEl.textContent = 'LOCKED';
-    const hands_lm = results.multiHandLandmarks;
-    const lm = hands_lm[0];
-    const gesture = classifyGesture(lm);
-    const pos = screenPos(lm[8]);
-    if(smoothX===null){ smoothX=pos.x; smoothY=pos.y; }
-    else{ smoothX += (pos.x-smoothX)*SMOOTH; smoothY += (pos.y-smoothY)*SMOOTH; }
 
-    if(showSkeleton) hands_lm.forEach(drawSkeleton);
-    handStateEl.textContent = 'GESTURE: ' + gesture.toUpperCase() + (hands_lm.length>1 ? ' · 2 HANDS' : '');
+    if(showSkeleton) hands_lm.forEach((lm,i)=>drawSkeleton(lm,i));
 
-    if(twoHandMode && hands_lm.length===2 && grabbedPanel){
-      const g2 = classifyGesture(hands_lm[1]);
-      const p1 = screenPos(lm[8]);
-      const p2 = screenPos(hands_lm[1][8]);
-      if(gesture==='pinch' && g2==='pinch'){
-        const d = Math.hypot(p1.x-p2.x, p1.y-p2.y);
-        if(!twoPinchActive){ twoPinchActive = true; twoPinchStartDist = d; twoPinchStartScale = grabbedPanel.scale; }
-        else{
-          let scale = twoPinchStartScale * (d / twoPinchStartDist);
-          scale = Math.max(0.5, Math.min(2.2, scale));
-          grabbedPanel.scale = scale;
-          updateTransform(grabbedPanel);
-        }
-        drawReticle(p1.x,p1.y,'pinch');
-        drawReticle(p2.x,p2.y,'pinch','#ffb454');
-        return;
-      } else { twoPinchActive = false; twoPinchStartDist = null; }
-    }
+    // process whichever hands are present this frame; reset the one that dropped out
+    if(hands_lm[0]) processHand(hs[0], hands_lm[0], hands_lm[1]||null);
+    else resetHandState(hs[0]);
 
-    drawReticle(smoothX, smoothY, gesture);
-    updateHover(smoothX, smoothY);
+    if(hands_lm[1]) processHand(hs[1], hands_lm[1], hands_lm[0]||null);
+    else resetHandState(hs[1]);
 
-    if(gesture === 'open' && !grabbedPanel){
-      if(trackSwipe(smoothX, smoothY)){ clearAllPanels(); closeSpawnMenu(); }
-      if(openHandHoldStart===null) openHandHoldStart = performance.now();
-      const held = performance.now() - openHandHoldStart;
-      if(held > 550 && !menuOpen) openSpawnMenu(smoothX, smoothY);
-      if(menuOpen) updateSpawnMenuHot(smoothX, smoothY);
-    } else {
-      if(gesture !== 'open') openHandHoldStart = null;
-      posHistory = [];
-    }
-
-    if(gesture === 'pinch'){
-      if(menuOpen){
-        if(hotOptionIndex > -1) spawnPanel(TEMPLATES[hotOptionIndex], menuOrigin.x, menuOrigin.y);
-        closeSpawnMenu();
-      } else if(!grabbedPanel){
-        tryGrab(smoothX, smoothY);
-      } else {
-        grabbedPanel.el.style.left = (smoothX + grabbedPanel.offsetX - grabbedPanel.el.offsetWidth/2) + 'px';
-        grabbedPanel.el.style.top = (smoothY + grabbedPanel.offsetY - grabbedPanel.el.offsetHeight/2) + 'px';
-        grabbedPanel.baseX = grabbedPanel.el.offsetLeft;
-        grabbedPanel.baseY = grabbedPanel.el.offsetTop;
-        checkTrashHover(grabbedPanel);
-      }
-    } else {
-      releaseGrab();
-      if(menuOpen && gesture !== 'open') closeSpawnMenu();
-    }
-
-    if(gesture === 'fist') tryDismiss(smoothX, smoothY);
+    handStateEl.textContent = hands_lm.length>1 ? 'TWO HANDS TRACKED' : 'ONE HAND TRACKED';
   }
 
   // ---------------- MediaPipe Tasks Vision wiring ----------------
@@ -829,7 +844,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
         delegate: delegate
       },
       runningMode: "VIDEO",
-      numHands: twoHandMode ? 2 : 1,
+      numHands: 2,
       minHandDetectionConfidence: 0.55,
       minHandPresenceConfidence: 0.5,
       minTrackingConfidence: 0.5
@@ -888,12 +903,9 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       currentStream = stream;
       video.srcObject = stream;
       camPermission.style.display = 'none';
-
       try{
         await video.play();
       }catch(playErr){
-        // autoplay was blocked (common when this fires without a fresh tap,
-        // e.g. the auto-start-on-load path) — ask for one explicit tap instead
         tapToStart.style.display = 'flex';
         tapToStart.onclick = async ()=>{
           try{ await video.play(); tapToStart.style.display = 'none'; startTracking(); }
