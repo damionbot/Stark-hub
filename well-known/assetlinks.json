@@ -1,0 +1,9 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.damionbot.twa",
+        "sha256_cert_fingerprints": ["4A:43:8A:15:E7:4D:F8:E5:97:72:0A:98:62:45:17:F2:1B:BD:39:0F:D2:D5:C4:76:C7:92:59:7F:B5:0E:1D:48"]
+      }
+    }]
+
