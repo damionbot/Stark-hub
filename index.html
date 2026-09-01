@@ -417,6 +417,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       el, tpl, grabbed:false, grabbedBy:null, offsetX:0, offsetY:0, scale: opts.scale || 1,
       shapeIdx:0, themeIdx:0,
       baseX: clampedX - pw/2, baseY: clampedY - 20,
+      curX: clampedX - pw/2, curY: clampedY - 20,
+      targetX: clampedX - pw/2, targetY: clampedY - 20,
       bobPhase: Math.random()*Math.PI*2,
       bobSpeed: 0.5 + Math.random()*0.4,
       bobAmp: 3 + Math.random()*3
@@ -474,9 +476,11 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     let dragging = false, sx=0, sy=0, ox=0, oy=0;
     head.addEventListener('pointerdown', (e)=>{
       dragging = true;
+      p.grabbed = true;
       head.setPointerCapture(e.pointerId);
       sx = e.clientX; sy = e.clientY;
       ox = p.el.offsetLeft; oy = p.el.offsetTop;
+      p.curX = ox; p.curY = oy; p.targetX = ox; p.targetY = oy;
       bringToFront(p);
     });
     head.addEventListener('pointermove', (e)=>{
@@ -484,12 +488,14 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       const nx = ox + (e.clientX - sx);
       const ny = oy + (e.clientY - sy);
       p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
+      p.curX = nx; p.curY = ny; p.targetX = nx; p.targetY = ny;
       p.baseX = nx; p.baseY = ny;
       checkTrashHover(p);
     });
     head.addEventListener('pointerup', ()=>{
       if(!dragging) return;
       dragging = false;
+      p.grabbed = false;
       maybeDropInTrash(p);
     });
 
@@ -539,7 +545,17 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   function idleFloatLoop(){
     const t = performance.now()/1000;
     panels.forEach(p=>{
-      if(p.grabbed) return;
+      if(p.grabbed){
+        // ease toward the hand's current target instead of snapping —
+        // this is what makes dragging feel smooth rather than jittery
+        p.curX += (p.targetX - p.curX) * 0.35;
+        p.curY += (p.targetY - p.curY) * 0.35;
+        p.el.style.left = p.curX + 'px';
+        p.el.style.top = p.curY + 'px';
+        updateTransform(p, 0, 0);
+        return;
+      }
+      p.curX = p.el.offsetLeft; p.curY = p.el.offsetTop;
       const bobY = Math.sin(t*p.bobSpeed + p.bobPhase) * p.bobAmp;
       const bobX = Math.cos(t*p.bobSpeed*0.7 + p.bobPhase) * (p.bobAmp*0.5);
       updateTransform(p, bobX, bobY);
@@ -566,12 +582,49 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       openHandHoldStart:null,
       menuOpen:false, menuOrigin:{x:0,y:0}, hotOptionIndex:-1, menuEl,
       posHistory:[], swipeCooldown:0,
-      resizingWith:null, resizeStartDist:null, resizeStartScale:1
+      resizingWith:null, resizeStartDist:null, resizeStartScale:1,
+      lastWristNorm:null, missingSince:null
     };
   }
   const hs = [ newHandState(0), newHandState(1) ];
+  const HAND_MATCH_MAX_DIST = 0.4;   // normalized 0-1 space
+  const HAND_GRACE_MS = 350;         // keep a hand "alive" through brief tracking dropouts
 
   function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+
+  // matches this frame's raw detected hands to stable slots (hs[0]/hs[1]) by
+  // proximity to each slot's last known wrist position, so a hand keeps its
+  // identity across frames instead of jumping between slots whenever the
+  // model's internal ordering changes (the actual cause of "broken" tracking
+  // once two hands were involved)
+  function matchHandsToSlots(rawHands){
+    const wristNorms = rawHands.map(h => ({x:h[0].x, y:h[0].y}));
+    const usedRaw = new Set();
+    const matched = [null, null];
+
+    hs.forEach((slot, i) => {
+      if(!slot.lastWristNorm) return;
+      let bestJ = -1, bestD = Infinity;
+      wristNorms.forEach((wn, j) => {
+        if(usedRaw.has(j)) return;
+        const d = dist(wn, slot.lastWristNorm);
+        if(d < bestD){ bestD = d; bestJ = j; }
+      });
+      if(bestJ > -1 && bestD < HAND_MATCH_MAX_DIST){
+        matched[i] = rawHands[bestJ];
+        usedRaw.add(bestJ);
+      }
+    });
+
+    // any leftover detected hands fill whichever slots are still empty
+    rawHands.forEach((h, j) => {
+      if(usedRaw.has(j)) return;
+      const emptySlot = matched.indexOf(null);
+      if(emptySlot > -1){ matched[emptySlot] = h; usedRaw.add(j); }
+    });
+
+    return matched;
+  }
 
   function classifyGesture(lm){
     const wrist = lm[0];
@@ -733,10 +786,11 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   }
 
   function processHand(state, lm, otherHandLm){
+    state.lastWristNorm = {x:lm[0].x, y:lm[0].y};
     const gesture = classifyGesture(lm);
     const pos = screenPos(lm[8]);
     if(state.smoothX===null){ state.smoothX=pos.x; state.smoothY=pos.y; }
-    else{ state.smoothX += (pos.x-state.smoothX)*0.35; state.smoothY += (pos.y-state.smoothY)*0.35; }
+    else{ state.smoothX += (pos.x-state.smoothX)*0.28; state.smoothY += (pos.y-state.smoothY)*0.28; }
 
     // two-hand resize in progress on a panel this hand doesn't primarily own
     if(state.resizingWith){
@@ -780,8 +834,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       } else {
         const nx = state.smoothX + state.offsetX - state.grabbedPanel.el.offsetWidth/2;
         const ny = state.smoothY + state.offsetY - state.grabbedPanel.el.offsetHeight/2;
-        state.grabbedPanel.el.style.left = nx + 'px';
-        state.grabbedPanel.el.style.top = ny + 'px';
+        state.grabbedPanel.targetX = nx;
+        state.grabbedPanel.targetY = ny;
         state.grabbedPanel.baseX = nx;
         state.grabbedPanel.baseY = ny;
         checkTrashHover(state.grabbedPanel);
@@ -794,12 +848,21 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     if(gesture === 'fist') tryDismiss(state.smoothX, state.smoothY);
   }
 
-  function resetHandState(state){
+  function resetHandState(state, hard){
+    if(!hard){
+      // brief tracking dropout — give it a short grace window before we
+      // actually let go of anything, so a single missed frame doesn't
+      // yank a grabbed panel out of your hand
+      if(state.missingSince === null) state.missingSince = performance.now();
+      if(performance.now() - state.missingSince < HAND_GRACE_MS) return;
+    }
     releaseGrab(state);
     closeSpawnMenu(state);
     state.openHandHoldStart = null;
     state.smoothX = state.smoothY = null;
     state.posHistory = [];
+    state.lastWristNorm = null;
+    state.missingSince = null;
     if(state.hoveredPanel){ state.hoveredPanel.el.classList.remove('hover'); state.hoveredPanel = null; }
   }
 
@@ -817,11 +880,15 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
     if(showSkeleton) hands_lm.forEach((lm,i)=>drawSkeleton(lm,i));
 
-    // process whichever hands are present this frame; reset the one that dropped out
-    if(hands_lm[0]) processHand(hs[0], hands_lm[0], hands_lm[1]||null);
+    // stable identity matching: a hand keeps its assigned slot across frames
+    // by proximity to where it was last seen, instead of raw array order
+    // (which the model doesn't guarantee stays consistent frame-to-frame)
+    const matched = matchHandsToSlots(hands_lm);
+
+    if(matched[0]){ hs[0].missingSince = null; processHand(hs[0], matched[0], matched[1]); }
     else resetHandState(hs[0]);
 
-    if(hands_lm[1]) processHand(hs[1], hands_lm[1], hands_lm[0]||null);
+    if(matched[1]){ hs[1].missingSince = null; processHand(hs[1], matched[1], matched[0]); }
     else resetHandState(hs[1]);
 
     handStateEl.textContent = hands_lm.length>1 ? 'TWO HANDS TRACKED' : 'ONE HAND TRACKED';
