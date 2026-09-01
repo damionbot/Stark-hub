@@ -10,17 +10,16 @@
 <style>
   :root{
     --void:#04070a;
-    --panel:#061119;
-    --line-dim:#0f3a4a;
     --cyan:#4fe3ff;
     --cyan-dim:#1c6b82;
     --amber:#ffb454;
     --white:#eaf6fb;
     --danger:#ff5d5d;
+    --green:#6dffb0;
     --font-body:'Consolas','SF Mono',monospace;
   }
 
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{
     margin:0;padding:0;width:100%;height:100%;
     background:var(--void);
@@ -29,32 +28,25 @@
     color:var(--white);
   }
 
-  #stage{
-    position:relative;
-    width:100%;height:100vh;
-    overflow:hidden;
-  }
+  #stage{ position:relative; width:100%;height:100vh; overflow:hidden; }
 
   video{
     position:absolute;top:0;left:0;
     width:100%;height:100%;
     object-fit:cover;
     transform:scaleX(-1);
-    filter:none;
+    background:#111;
   }
 
-  #tint{
+  #tapToStart{
     position:absolute;inset:0;
-    background:
-      radial-gradient(ellipse at center, rgba(4,10,14,0.02) 0%, rgba(2,6,9,0.18) 88%),
-      linear-gradient(180deg, rgba(6,20,26,0.05), rgba(3,8,11,0.1));
-    pointer-events:none;
-  }
-
-  #scanlines{
-    position:absolute;inset:0;
-    pointer-events:none;
     display:none;
+    align-items:center;justify-content:center;
+    background:rgba(4,7,10,0.55);
+    color:var(--cyan);
+    font-size:12px;letter-spacing:2px;
+    z-index:15;
+    cursor:pointer;
   }
 
   #gestureCanvas{
@@ -63,15 +55,10 @@
     pointer-events:none;
   }
 
-  #chrome{
-    position:absolute;inset:0;
-    pointer-events:none;
-  }
+  #chrome{ position:absolute;inset:0; pointer-events:none; }
   .corner-frame{
-    position:absolute;
-    width:26px;height:26px;
-    border:2px solid var(--cyan-dim);
-    opacity:0.8;
+    position:absolute; width:26px;height:26px;
+    border:2px solid var(--cyan-dim); opacity:0.8;
   }
   .corner-frame.tl{top:14px;left:14px;border-right:none;border-bottom:none;}
   .corner-frame.tr{top:14px;right:14px;border-left:none;border-bottom:none;}
@@ -81,164 +68,141 @@
   #topbar{
     position:absolute;top:16px;left:50%;transform:translateX(-50%);
     display:flex;gap:22px;align-items:baseline;flex-wrap:wrap;justify-content:center;
-    font-size:10.5px;letter-spacing:2px;
-    color:var(--cyan-dim);
-    max-width:92%;
+    font-size:10.5px;letter-spacing:2px; color:var(--cyan-dim); max-width:60%;
   }
-  #topbar .brand{
-    color:var(--cyan);
-    font-size:13px;
-    letter-spacing:4px;
-  }
+  #topbar .brand{ color:var(--cyan); font-size:13px; letter-spacing:4px; }
   #clock{color:var(--white);}
 
-  #skeletonToggle{
-    position:absolute;top:14px;right:14px;
+  .hud-toggle{
+    position:absolute; top:14px;
     pointer-events:auto;
     background:rgba(4,14,19,0.6);
     border:1px solid var(--cyan-dim);
     color:var(--cyan-dim);
     font-family:var(--font-body);
-    font-size:9px;letter-spacing:1.5px;
-    padding:6px 10px;
+    font-size:9px;letter-spacing:1.2px;
+    padding:6px 9px;
     cursor:pointer;
   }
-  #skeletonToggle.on{color:var(--cyan);border-color:var(--cyan);}
+  .hud-toggle.on{color:var(--amber);border-color:var(--amber);}
+  #skeletonToggle{right:14px;}
+  #handsToggle{right:112px;}
+  #soundToggle{right:216px;}
 
-  #handsToggle{
-    position:absolute;top:14px;right:130px;
-    pointer-events:auto;
-    background:rgba(4,14,19,0.6);
-    border:1px solid var(--cyan-dim);
-    color:var(--cyan-dim);
-    font-family:var(--font-body);
-    font-size:9px;letter-spacing:1.5px;
-    padding:6px 10px;
-    cursor:pointer;
-  }
-  #handsToggle.on{color:var(--amber);border-color:var(--amber);}
-
-  #statusline{
-    position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
-    font-size:10.5px;letter-spacing:1.2px;
-    color:var(--cyan-dim);
-    text-align:center;
-    line-height:1.6;
-    max-width:94%;
-  }
-  #statusline b{color:var(--amber);font-weight:normal;}
-  #handState{color:var(--cyan);}
   #modelState{
     position:absolute; bottom:44px; left:50%; transform:translateX(-50%);
     font-size:10px; letter-spacing:1.5px; color:var(--amber);
     background:rgba(4,14,19,0.7); padding:4px 10px; border:1px solid var(--cyan-dim);
-    display:none;
+    display:none; z-index:5;
   }
   #modelState.error{color:var(--danger); border-color:var(--danger);}
 
+  #statusline{
+    position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+    font-size:10px;letter-spacing:1.1px; color:var(--cyan-dim);
+    text-align:center; line-height:1.6; max-width:94%;
+  }
+  #statusline b{color:var(--amber);font-weight:normal;}
+  #handState{color:var(--cyan);}
+
+  #trashZone{
+    position:absolute; bottom:70px; right:14px;
+    width:56px;height:56px;
+    border:1px dashed var(--danger);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--danger); font-size:9px; letter-spacing:1px; text-align:center;
+    opacity:0.5;
+    pointer-events:none;
+    transition:opacity 0.15s ease, transform 0.15s ease;
+  }
+  #trashZone.active{ opacity:1; transform:scale(1.15); background:rgba(255,93,93,0.15); }
+
   .panel{
     position:absolute;
-    width:230px;
+    width:220px;
     background:linear-gradient(160deg, rgba(7,26,34,0.72), rgba(4,14,19,0.78));
     border:1px solid var(--cyan-dim);
     box-shadow:0 0 18px rgba(79,227,255,0.12), inset 0 0 24px rgba(79,227,255,0.04);
     clip-path:polygon(0 10px,10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%);
-    padding:0;
     user-select:none;
+    touch-action:none;
     transition:box-shadow 0.15s ease, border-color 0.15s ease;
     transform-origin:center center;
+    pointer-events:auto;
   }
-  .panel.hover{
-    border-color:#8fe9ff;
-    box-shadow:0 0 16px rgba(143,233,255,0.25);
-  }
-  .panel.armed{
-    border-color:var(--amber);
-    box-shadow:0 0 26px rgba(255,180,84,0.35), inset 0 0 24px rgba(255,180,84,0.08);
-  }
+  .panel.shape-hex{ clip-path:polygon(6% 0,94% 0,100% 20%,100% 80%,94% 100%,6% 100%,0 80%,0 20%); }
+  .panel.shape-round{ clip-path:none; border-radius:16px; }
+  .panel.shape-angular{ clip-path:polygon(0 0,100% 0,100% 85%,85% 100%,0 100%); }
+
+  .panel.hover{ border-color:#8fe9ff; box-shadow:0 0 16px rgba(143,233,255,0.25); }
+  .panel.armed{ border-color:var(--amber); box-shadow:0 0 26px rgba(255,180,84,0.35), inset 0 0 24px rgba(255,180,84,0.08); }
+  .panel.locked{ border-color:var(--green); }
+  .panel.locked .lockbtn{ color:var(--green); }
+  .panel.theme-amber{ border-color:var(--amber); }
+  .panel.theme-amber .head{ color:var(--amber); }
+  .panel.theme-amber .dot{ background:var(--amber); box-shadow:0 0 6px var(--amber); }
+  .panel.theme-amber .bar-fill{ background:var(--amber); box-shadow:0 0 6px var(--amber); }
+  .panel.theme-red .head{ color:var(--danger); }
+  .panel.theme-red .dot{ background:var(--danger); box-shadow:0 0 6px var(--danger); }
+  .panel.theme-red .bar-fill{ background:var(--danger); box-shadow:0 0 6px var(--danger); }
+  .panel.theme-green .head{ color:var(--green); }
+  .panel.theme-green .dot{ background:var(--green); box-shadow:0 0 6px var(--green); }
+  .panel.theme-green .bar-fill{ background:var(--green); box-shadow:0 0 6px var(--green); }
+
   .panel .head{
     display:flex;justify-content:space-between;align-items:center;
-    padding:7px 10px;
-    border-bottom:1px solid var(--line-dim);
-    font-size:10px;letter-spacing:2px;
+    padding:6px 8px;
+    border-bottom:1px solid var(--line-dim, #0f3a4a);
+    font-size:9.5px;letter-spacing:1.6px;
     color:var(--cyan);
+    cursor:grab;
   }
-  .panel .head .dot{
-    width:6px;height:6px;border-radius:50%;
-    background:var(--cyan);
-    box-shadow:0 0 6px var(--cyan);
+  .panel .head .dot{ width:6px;height:6px;border-radius:50%; background:var(--cyan); box-shadow:0 0 6px var(--cyan); flex-shrink:0; }
+  .panel .headctl{ display:flex; gap:6px; align-items:center; }
+  .panel .headctl button{
+    background:transparent; border:1px solid var(--cyan-dim); color:var(--cyan-dim);
+    font-family:var(--font-body); font-size:9px; line-height:1;
+    width:18px;height:18px; display:flex;align-items:center;justify-content:center;
+    cursor:pointer; padding:0;
   }
-  .panel .body{
-    padding:10px;
-    font-size:10.5px;
-    color:var(--white);
-    line-height:1.55;
-  }
-  .panel .row{display:flex;justify-content:space-between;margin-bottom:5px;color:var(--cyan-dim);}
+  .panel .headctl button:active{ background:rgba(79,227,255,0.15); }
+  .panel .body{ padding:9px; font-size:10px; color:var(--white); line-height:1.5; }
+  .panel .row{display:flex;justify-content:space-between;margin-bottom:4px;color:var(--cyan-dim);}
   .panel .row span:last-child{color:var(--white);}
-  .bar-track{
-    height:4px;width:100%;background:rgba(79,227,255,0.12);
-    margin-top:3px;margin-bottom:8px;
-    position:relative;
-  }
-  .bar-fill{
-    position:absolute;top:0;left:0;height:100%;
-    background:var(--cyan);
-    box-shadow:0 0 6px var(--cyan);
+  .bar-track{ height:4px;width:100%;background:rgba(79,227,255,0.12); margin-top:3px;margin-bottom:6px; position:relative; }
+  .bar-fill{ position:absolute;top:0;left:0;height:100%; background:var(--cyan); box-shadow:0 0 6px var(--cyan); }
+  .resize-handle{
+    position:absolute; right:-4px; bottom:-4px; width:16px;height:16px;
+    border-right:2px solid var(--cyan-dim); border-bottom:2px solid var(--cyan-dim);
+    cursor:nwse-resize; touch-action:none;
   }
 
-  #spawnMenu{
-    position:absolute;
-    display:none;
-    pointer-events:none;
-  }
+  #spawnMenu{ position:absolute; display:none; pointer-events:none; }
   .spawn-opt{
-    position:absolute;
-    width:74px;height:74px;
-    border:1px solid var(--cyan-dim);
-    border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    text-align:center;
-    font-size:8.5px;letter-spacing:1px;
-    color:var(--cyan-dim);
+    position:absolute; width:70px;height:70px;
+    border:1px solid var(--cyan-dim); border-radius:50%;
+    display:flex;align-items:center;justify-content:center; text-align:center;
+    font-size:8px;letter-spacing:1px; color:var(--cyan-dim);
     background:rgba(4,14,19,0.55);
-    transform:translate(-50%,-50%) scale(0.8);
-    opacity:0.55;
+    transform:translate(-50%,-50%) scale(0.8); opacity:0.55;
     transition:all 0.12s ease;
   }
   .spawn-opt.hot{
-    color:var(--void);
-    background:var(--amber);
-    border-color:var(--amber);
+    color:var(--void); background:var(--amber); border-color:var(--amber);
     box-shadow:0 0 20px rgba(255,180,84,0.55);
-    transform:translate(-50%,-50%) scale(1.05);
-    opacity:1;
+    transform:translate(-50%,-50%) scale(1.05); opacity:1;
   }
 
   #camPermission{
-    position:absolute;inset:0;
-    display:flex;align-items:center;justify-content:center;
-    flex-direction:column;gap:14px;
-    background:var(--void);
-    z-index:20;
-    text-align:center;
-    padding:20px;
+    position:absolute;inset:0; display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:14px; background:var(--void); z-index:20; text-align:center; padding:20px;
   }
-  #camPermission h1{
-    font-size:15px;letter-spacing:5px;color:var(--cyan);font-weight:normal;margin:0;
-  }
-  #camPermission p{
-    max-width:340px;font-size:12px;color:var(--cyan-dim);line-height:1.7;margin:0;
-  }
+  #camPermission h1{ font-size:15px;letter-spacing:5px;color:var(--cyan);font-weight:normal;margin:0; }
+  #camPermission p{ max-width:340px;font-size:12px;color:var(--cyan-dim);line-height:1.7;margin:0; }
   .hud-btn{
-    margin-top:6px;
-    background:transparent;
-    border:1px solid var(--cyan);
-    color:var(--cyan);
-    padding:10px 22px;
-    font-family:var(--font-body);
-    font-size:11px;letter-spacing:3px;
-    cursor:pointer;
+    margin-top:6px; background:transparent; border:1px solid var(--cyan); color:var(--cyan);
+    padding:10px 22px; font-family:var(--font-body); font-size:11px;letter-spacing:3px; cursor:pointer;
     clip-path:polygon(0 8px,8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%);
   }
   .hud-btn:hover{background:rgba(79,227,255,0.1);}
@@ -248,9 +212,8 @@
 <body>
 
 <div id="stage">
-  <video id="video" autoplay playsinline muted></video>
-  <div id="tint"></div>
-  <div id="scanlines"></div>
+  <video id="video" autoplay playsinline webkit-playsinline="true" muted></video>
+  <div id="tapToStart">TAP TO START VIDEO</div>
   <canvas id="gestureCanvas"></canvas>
 
   <div id="chrome">
@@ -260,20 +223,22 @@
     <div class="corner-frame br"></div>
     <div id="topbar">
       <span class="brand">HUD</span>
-      <span>GESTURE LINK · <span id="linkState">SEARCHING</span></span>
+      <span>LINK · <span id="linkState">SEARCHING</span></span>
       <span id="clock">--:--:--</span>
     </div>
-    <button id="handsToggle" class="off">2-HAND: OFF</button>
-    <button id="skeletonToggle" class="off">SKELETON: OFF</button>
+    <button id="soundToggle" class="hud-toggle off">SOUND: OFF</button>
+    <button id="handsToggle" class="hud-toggle off">2-HAND: OFF</button>
+    <button id="skeletonToggle" class="hud-toggle off">SKEL: OFF</button>
     <div id="modelState">LOADING HAND-TRACKING MODEL…</div>
     <div id="statusline">
-      <div><b>OPEN HAND</b>, HOLD STILL → MENU &nbsp;·&nbsp; <b>PINCH</b> → GRAB / SELECT &nbsp;·&nbsp; <b>FIST</b> ON PANEL → DISMISS &nbsp;·&nbsp; <b>FAST SWIPE</b> → CLEAR ALL &nbsp;·&nbsp; <b>BOTH HANDS PINCH</b> → RESIZE</div>
+      <div><b>OPEN HAND</b> HOLD → MENU &nbsp;·&nbsp; <b>PINCH</b> → GRAB &nbsp;·&nbsp; <b>FIST</b> ON PANEL → DISMISS &nbsp;·&nbsp; <b>SWIPE</b> → CLEAR ALL &nbsp;·&nbsp; <b>2-HAND PINCH</b> → RESIZE &nbsp;·&nbsp; TOUCH PANELS DIRECTLY TOO</div>
       <div id="handState">NO HAND DETECTED</div>
     </div>
   </div>
 
   <div id="panelLayer"></div>
   <div id="spawnMenu"></div>
+  <div id="trashZone">DROP<br>TO<br>DELETE</div>
 
   <div id="camPermission">
     <h1>STARK HUD // GESTURE INTERFACE</h1>
@@ -288,6 +253,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
 (function(){
   const video = document.getElementById('video');
+  const tapToStart = document.getElementById('tapToStart');
   const canvas = document.getElementById('gestureCanvas');
   const ctx = canvas.getContext('2d');
   const panelLayer = document.getElementById('panelLayer');
@@ -300,18 +266,42 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   const errMsg = document.getElementById('errMsg');
   const skeletonToggle = document.getElementById('skeletonToggle');
   const handsToggle = document.getElementById('handsToggle');
-
+  const soundToggle = document.getElementById('soundToggle');
   const modelState = document.getElementById('modelState');
+  const trashZone = document.getElementById('trashZone');
+
   let showSkeleton = false;
   let twoHandMode = false;
+  let soundOn = false;
   let currentStream = null;
+  let audioCtx = null;
+
+  function playBeep(freq, dur, type){
+    if(!soundOn) return;
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + dur);
+    }catch(e){}
+  }
 
   skeletonToggle.addEventListener('click', ()=>{
     showSkeleton = !showSkeleton;
-    skeletonToggle.textContent = 'SKELETON: ' + (showSkeleton ? 'ON' : 'OFF');
+    skeletonToggle.textContent = 'SKEL: ' + (showSkeleton ? 'ON' : 'OFF');
     skeletonToggle.classList.toggle('on', showSkeleton);
   });
-
+  soundToggle.addEventListener('click', ()=>{
+    soundOn = !soundOn;
+    soundToggle.textContent = 'SOUND: ' + (soundOn ? 'ON' : 'OFF');
+    soundToggle.classList.toggle('on', soundOn);
+    if(soundOn) playBeep(880, 0.08);
+  });
   handsToggle.addEventListener('click', async ()=>{
     twoHandMode = !twoHandMode;
     handsToggle.textContent = '2-HAND: ' + (twoHandMode ? 'ON' : 'OFF');
@@ -319,8 +309,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     await rebuildLandmarker();
   });
 
-  // standard 21-point mediapipe hand skeleton connections, drawn manually
-  // since we no longer load the separate drawing_utils package
   const HAND_CONNECTIONS = [
     [0,1],[1,2],[2,3],[3,4],
     [0,5],[5,6],[6,7],[7,8],
@@ -330,79 +318,220 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     [0,17]
   ];
 
-  function resize(){
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
+  function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
   window.addEventListener('resize', resize);
   resize();
 
-  setInterval(()=>{
-    clockEl.textContent = new Date().toLocaleTimeString('en-GB');
-  }, 1000);
+  setInterval(()=>{ clockEl.textContent = new Date().toLocaleTimeString('en-GB'); }, 1000);
 
-  // release the camera cleanly so a reload doesn't leave the device locked
   function stopStream(){
     loopRunning = false;
-    if(currentStream){
-      currentStream.getTracks().forEach(t=>t.stop());
-      currentStream = null;
-    }
+    if(currentStream){ currentStream.getTracks().forEach(t=>t.stop()); currentStream = null; }
   }
   window.addEventListener('pagehide', stopStream);
   window.addEventListener('beforeunload', stopStream);
 
   // ---------------- Panel content templates ----------------
   const TEMPLATES = [
-    { id:'power', label:'POWER CORE', rows:[['OUTPUT','118%'],['TEMP','612K'],['STABILITY','NOMINAL']], bar:92 },
-    { id:'sys', label:'SYSTEM STATUS', rows:[['CPU LOAD','34%'],['UPTIME','04:12:09'],['THREADS','128 ACTIVE']], bar:34 },
-    { id:'comms', label:'COMMS', rows:[['SIGNAL','STRONG'],['LATENCY','12ms'],['CHANNEL','ENCRYPTED']], bar:78 },
-    { id:'scan', label:'ENV SCAN', rows:[['OBJECTS','3 TRACKED'],['THREAT','NONE'],['RANGE','40m']], bar:15 },
-    { id:'nav', label:'NAV / GPS', rows:[['ALT','142m'],['HEADING','047°'],['SPEED','0 m/s']], bar:60 },
-    { id:'bio', label:'BIOMETRICS', rows:[['HEART RATE','71 bpm'],['O2','98%'],['STRESS','LOW']], bar:45 },
+    { id:'power', label:'POWER CORE', rows:[['OUTPUT','118%'],['TEMP','612K'],['STABILITY','NOMINAL']], bar:92, theme:'' },
+    { id:'sys', label:'SYSTEM STATUS', rows:[['CPU LOAD','34%'],['UPTIME','04:12:09'],['THREADS','128 ACTIVE']], bar:34, theme:'' },
+    { id:'comms', label:'COMMS', rows:[['SIGNAL','STRONG'],['LATENCY','12ms'],['CHANNEL','ENCRYPTED']], bar:78, theme:'' },
+    { id:'scan', label:'ENV SCAN', rows:[['OBJECTS','3 TRACKED'],['THREAT','NONE'],['RANGE','40m']], bar:15, theme:'' },
+    { id:'nav', label:'NAV / GPS', rows:[['ALT','142m'],['HEADING','047°'],['SPEED','0 m/s']], bar:60, theme:'' },
+    { id:'bio', label:'BIOMETRICS', rows:[['HEART RATE','71 bpm'],['O2','98%'],['STRESS','LOW']], bar:45, theme:'green' },
+    { id:'weap', label:'WEAPONS', rows:[['LOADOUT','REPULSORS'],['CHARGE','100%'],['SAFETY','ON']], bar:100, theme:'red' },
+    { id:'target', label:'TARGET LOCK', rows:[['TARGETS','0 LOCKED'],['MODE','STANDBY'],['FOV','120°']], bar:10, theme:'red' },
+    { id:'medical', label:'MEDICAL', rows:[['PULSE','NORMAL'],['INJURY','NONE'],['FATIGUE','LOW']], bar:20, theme:'green' },
+    { id:'audio', label:'AUDIO FEED', rows:[['SOURCE','AMBIENT'],['NOISE FLOOR','-42dB'],['EQ','FLAT']], bar:55, theme:'' },
+    { id:'weather', label:'WEATHER', rows:[['TEMP','21°C'],['WIND','8 km/h'],['VISIBILITY','GOOD']], bar:70, theme:'amber' },
+    { id:'alert', label:'ALERT LOG', rows:[['CRITICAL','0'],['WARNING','2'],['INFO','14']], bar:5, theme:'amber' },
+    { id:'map', label:'TACTICAL MAP', rows:[['ZONE','SECTOR 7'],['UNITS','1'],['STATUS','CLEAR']], bar:40, theme:'' },
+    { id:'defense', label:'DEFENSE GRID', rows:[['SHIELDS','ONLINE'],['INTEGRITY','100%'],['DRAIN','LOW']], bar:100, theme:'amber' },
   ];
 
   let panelCount = 0;
   const panels = [];
+  let lastRemoved = null; // for undo
 
-  function spawnPanel(tpl, x, y){
+  function makeControlsHTML(){
+    return `
+      <div class="headctl">
+        <button class="shapebtn" title="reshape">⬡</button>
+        <button class="clonebtn" title="clone">⧉</button>
+        <button class="colorbtn" title="theme">◐</button>
+        <button class="lockbtn" title="lock">🔒</button>
+        <button class="closebtn" title="close">×</button>
+      </div>`;
+  }
+
+  const SHAPES = ['', 'shape-hex', 'shape-round', 'shape-angular'];
+  const THEMES = ['', 'theme-amber', 'theme-red', 'theme-green'];
+
+  function spawnPanel(tpl, x, y, opts){
+    opts = opts || {};
     panelCount++;
     const el = document.createElement('div');
-    el.className = 'panel';
+    el.className = 'panel' + (tpl.theme ? ' theme-'+tpl.theme : '');
     el.dataset.id = 'p'+panelCount;
-    el.style.left = (x - 115) + 'px';
+    el.style.left = (x - 110) + 'px';
     el.style.top = (y - 20) + 'px';
     el.innerHTML = `
-      <div class="head"><span>${tpl.label}</span><span class="dot"></span></div>
+      <div class="head">
+        <span class="dot"></span>
+        <span style="flex:1;padding:0 6px;">${tpl.label}</span>
+        ${makeControlsHTML()}
+      </div>
       <div class="body">
         ${tpl.rows.map(r=>`<div class="row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}
         <div class="bar-track"><div class="bar-fill" style="width:${tpl.bar}%"></div></div>
       </div>
+      <div class="resize-handle"></div>
     `;
     panelLayer.appendChild(el);
-    const rec = {el, grabbed:false, offsetX:0, offsetY:0, scale:1};
+    const rec = {
+      el, tpl, grabbed:false, offsetX:0, offsetY:0, scale: opts.scale || 1,
+      locked:false, shapeIdx:0, themeIdx: THEMES.indexOf(tpl.theme?('theme-'+tpl.theme):'') > -1 ? THEMES.indexOf(tpl.theme?('theme-'+tpl.theme):'') : 0,
+      baseX: x - 110, baseY: y - 20,
+      bobPhase: Math.random()*Math.PI*2,
+      bobSpeed: 0.5 + Math.random()*0.4,
+      bobAmp: 3 + Math.random()*3
+    };
     panels.push(rec);
+    wirePanelInteractions(rec);
+    playBeep(660, 0.1);
     return rec;
   }
 
-  function removePanel(p){
+  function removePanel(p, silent){
     p.el.remove();
     const idx = panels.indexOf(p);
     if(idx>-1) panels.splice(idx,1);
+    if(!silent){ lastRemoved = {tpl:p.tpl, x:p.baseX+110, y:p.baseY+20}; playBeep(220,0.12,'square'); }
   }
-
-  function clearAllPanels(){
-    [...panels].forEach(removePanel);
-  }
+  function clearAllPanels(){ [...panels].forEach(p=>removePanel(p,true)); playBeep(200,0.2,'sawtooth'); }
 
   function panelCenter(p){
     const r = p.el.getBoundingClientRect();
     return {x:r.left+r.width/2, y:r.top+r.height/2, r};
   }
 
+  function updateTransform(p, bobX, bobY){
+    p.el.style.transform = `translate(${bobX||0}px, ${bobY||0}px) scale(${p.scale})`;
+  }
+
+  function cycleShape(p){
+    p.shapeIdx = (p.shapeIdx+1) % SHAPES.length;
+    SHAPES.forEach(s=>{ if(s) p.el.classList.remove(s); });
+    if(SHAPES[p.shapeIdx]) p.el.classList.add(SHAPES[p.shapeIdx]);
+    playBeep(500,0.06);
+  }
+  function cycleTheme(p){
+    p.themeIdx = (p.themeIdx+1) % THEMES.length;
+    THEMES.forEach(t=>{ if(t) p.el.classList.remove(t); });
+    if(THEMES[p.themeIdx]) p.el.classList.add(THEMES[p.themeIdx]);
+    playBeep(500,0.06);
+  }
+  function toggleLock(p){
+    p.locked = !p.locked;
+    p.el.classList.toggle('locked', p.locked);
+    playBeep(p.locked?700:400,0.08);
+  }
+  function clonePanel(p){
+    const c = panelCenter(p);
+    const clone = spawnPanel(p.tpl, c.x+30, c.y+30, {scale:p.scale});
+    return clone;
+  }
+
+  // ---- native touch/pointer interactions per panel (works even without camera) ----
+  function wirePanelInteractions(p){
+    const head = p.el.querySelector('.head');
+    const handle = p.el.querySelector('.resize-handle');
+    p.el.querySelector('.shapebtn').addEventListener('click', (e)=>{ e.stopPropagation(); cycleShape(p); });
+    p.el.querySelector('.clonebtn').addEventListener('click', (e)=>{ e.stopPropagation(); clonePanel(p); });
+    p.el.querySelector('.colorbtn').addEventListener('click', (e)=>{ e.stopPropagation(); cycleTheme(p); });
+    p.el.querySelector('.lockbtn').addEventListener('click', (e)=>{ e.stopPropagation(); toggleLock(p); });
+    p.el.querySelector('.closebtn').addEventListener('click', (e)=>{ e.stopPropagation(); removePanel(p); });
+
+    let dragging = false, sx=0, sy=0, ox=0, oy=0;
+    head.addEventListener('pointerdown', (e)=>{
+      if(p.locked) return;
+      dragging = true;
+      head.setPointerCapture(e.pointerId);
+      sx = e.clientX; sy = e.clientY;
+      ox = p.el.offsetLeft; oy = p.el.offsetTop;
+      bringToFront(p);
+    });
+    head.addEventListener('pointermove', (e)=>{
+      if(!dragging) return;
+      const nx = ox + (e.clientX - sx);
+      const ny = oy + (e.clientY - sy);
+      p.el.style.left = nx+'px'; p.el.style.top = ny+'px';
+      p.baseX = nx; p.baseY = ny;
+      checkTrashHover(p);
+    });
+    head.addEventListener('pointerup', (e)=>{
+      if(!dragging) return;
+      dragging = false;
+      maybeDropInTrash(p);
+    });
+
+    let resizing = false, rsx=0, rsw=0;
+    handle.addEventListener('pointerdown', (e)=>{
+      if(p.locked) return;
+      e.stopPropagation();
+      resizing = true;
+      handle.setPointerCapture(e.pointerId);
+      rsx = e.clientX; rsw = p.scale;
+    });
+    handle.addEventListener('pointermove', (e)=>{
+      if(!resizing) return;
+      const delta = (e.clientX - rsx) / 150;
+      p.scale = Math.max(0.5, Math.min(2.2, rsw + delta));
+      updateTransform(p);
+    });
+    handle.addEventListener('pointerup', ()=>{ resizing = false; });
+  }
+
+  function bringToFront(p){
+    panelLayer.appendChild(p.el);
+  }
+
+  function checkTrashHover(p){
+    const c = panelCenter(p);
+    const tr = trashZone.getBoundingClientRect();
+    const trc = {x:tr.left+tr.width/2, y:tr.top+tr.height/2};
+    const near = Math.hypot(c.x-trc.x, c.y-trc.y) < 60;
+    trashZone.classList.toggle('active', near);
+    return near;
+  }
+  function maybeDropInTrash(p){
+    if(checkTrashHover(p)){ removePanel(p); trashZone.classList.remove('active'); }
+  }
+
   window.addEventListener('load', ()=>{
-    spawnPanel(TEMPLATES[1], window.innerWidth*0.18, window.innerHeight*0.32);
-    spawnPanel(TEMPLATES[0], window.innerWidth*0.82, window.innerHeight*0.30);
+    spawnPanel(TEMPLATES[1], window.innerWidth*0.2, window.innerHeight*0.3);
+    spawnPanel(TEMPLATES[0], window.innerWidth*0.78, window.innerHeight*0.28);
+    spawnPanel(TEMPLATES[6], window.innerWidth*0.5, window.innerHeight*0.65);
+  });
+
+  // idle ambient float animation for all panels not currently being manipulated
+  function idleFloatLoop(){
+    const t = performance.now()/1000;
+    panels.forEach(p=>{
+      if(p.grabbed) return;
+      const bobY = Math.sin(t*p.bobSpeed + p.bobPhase) * p.bobAmp;
+      const bobX = Math.cos(t*p.bobSpeed*0.7 + p.bobPhase) * (p.bobAmp*0.5);
+      updateTransform(p, bobX, bobY);
+    });
+    requestAnimationFrame(idleFloatLoop);
+  }
+  requestAnimationFrame(idleFloatLoop);
+
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === 'z' && lastRemoved){
+      spawnPanel(lastRemoved.tpl, lastRemoved.x, lastRemoved.y);
+      lastRemoved = null;
+    }
   });
 
   // ---------------- Gesture state ----------------
@@ -414,12 +543,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   let menuOpen = false;
   let menuOrigin = {x:0,y:0};
   let hotOptionIndex = -1;
-
-  // swipe detection
   let posHistory = [];
   let swipeCooldown = 0;
-
-  // two-hand resize
   let twoPinchActive = false;
   let twoPinchStartDist = null;
   let twoPinchStartScale = 1;
@@ -453,13 +578,11 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   }
 
   function openSpawnMenu(x,y){
-    menuOpen = true;
-    menuOrigin = {x,y};
+    menuOpen = true; menuOrigin = {x,y};
     spawnMenu.style.display='block';
-    spawnMenu.style.left=x+'px';
-    spawnMenu.style.top=y+'px';
+    spawnMenu.style.left=x+'px'; spawnMenu.style.top=y+'px';
     spawnMenu.innerHTML='';
-    const radius=105;
+    const radius=110;
     TEMPLATES.forEach((tpl,i)=>{
       const angle=(i/TEMPLATES.length)*Math.PI*2 - Math.PI/2;
       const ox=Math.cos(angle)*radius, oy=Math.sin(angle)*radius;
@@ -505,11 +628,12 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
   function tryGrab(x,y){
     const best = nearestPanel(x,y);
-    if(best){
+    if(best && !best.locked){
       grabbedPanel = best;
       best.grabbed = true;
       best.el.classList.add('armed');
       best.el.classList.remove('hover');
+      bringToFront(best);
       const c = panelCenter(best);
       best.offsetX = c.x - x;
       best.offsetY = c.y - y;
@@ -517,15 +641,20 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   }
   function releaseGrab(){
     if(grabbedPanel){
-      grabbedPanel.grabbed=false;
-      grabbedPanel.el.classList.remove('armed');
+      maybeDropInTrash(grabbedPanel);
+      if(panels.includes(grabbedPanel)){
+        grabbedPanel.grabbed=false;
+        grabbedPanel.el.classList.remove('armed');
+      }
       grabbedPanel=null;
+      trashZone.classList.remove('active');
     }
     twoPinchActive = false;
     twoPinchStartDist = null;
   }
   function tryDismiss(x,y){
     for(const p of [...panels]){
+      if(p.locked) continue;
       const c = panelCenter(p);
       const d = Math.hypot(x-c.x, y-c.y);
       if(d < Math.max(c.r.width,c.r.height)*0.6) removePanel(p);
@@ -535,9 +664,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   function drawReticle(x,y,gesture,color){
     const colors = { pinch:'#ffb454', fist:'#ff5d5d', open:'#4fe3ff', neutral:'#4fe3ff' };
     const c = color || colors[gesture] || '#4fe3ff';
-    ctx.strokeStyle = c;
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
     const r = gesture==='pinch' ? 10 : 18;
     ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.stroke();
     ctx.beginPath();
@@ -550,36 +677,25 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   }
 
   function drawSkeleton(lm){
-    const pts = lm.map(p=>({x:(1-p.x)*window.innerWidth, y:p.y*window.innerHeight}));
-    ctx.strokeStyle = 'rgba(79,227,255,0.55)';
-    ctx.lineWidth = 1.5;
+    const pts = lm.map(pt=>({x:(1-pt.x)*window.innerWidth, y:pt.y*window.innerHeight}));
+    ctx.strokeStyle = 'rgba(79,227,255,0.55)'; ctx.lineWidth = 1.5;
     HAND_CONNECTIONS.forEach(([a,b])=>{
-      ctx.beginPath();
-      ctx.moveTo(pts[a].x, pts[a].y);
-      ctx.lineTo(pts[b].x, pts[b].y);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); ctx.stroke();
     });
     ctx.fillStyle = 'rgba(255,180,84,0.85)';
-    pts.forEach(p=>{
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 2.5, 0, Math.PI*2);
-      ctx.fill();
-    });
+    pts.forEach(pt=>{ ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI*2); ctx.fill(); });
   }
 
   function trackSwipe(x,y){
     const now = performance.now();
     posHistory.push({x,y,t:now});
-    posHistory = posHistory.filter(p => now - p.t < 260);
+    posHistory = posHistory.filter(pt => now - pt.t < 260);
     if(posHistory.length < 4) return false;
     const first = posHistory[0], last = posHistory[posHistory.length-1];
     const dt = (last.t - first.t) / 1000;
     if(dt <= 0) return false;
     const vx = (last.x - first.x) / dt;
-    if(Math.abs(vx) > 2400 && now > swipeCooldown){
-      swipeCooldown = now + 900;
-      return true;
-    }
+    if(Math.abs(vx) > 2400 && now > swipeCooldown){ swipeCooldown = now + 900; return true; }
     return false;
   }
 
@@ -588,62 +704,46 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     if(!results.multiHandLandmarks || results.multiHandLandmarks.length===0){
       handStateEl.textContent = 'NO HAND DETECTED';
       linkStateEl.textContent = 'SEARCHING';
-      releaseGrab();
-      closeSpawnMenu();
-      openHandHoldStart = null;
-      smoothX = smoothY = null;
-      posHistory = [];
+      releaseGrab(); closeSpawnMenu();
+      openHandHoldStart = null; smoothX = smoothY = null; posHistory = [];
       if(hoveredPanel){ hoveredPanel.el.classList.remove('hover'); hoveredPanel=null; }
       return;
     }
-
     linkStateEl.textContent = 'LOCKED';
     const hands_lm = results.multiHandLandmarks;
     const lm = hands_lm[0];
     const gesture = classifyGesture(lm);
     const pos = screenPos(lm[8]);
-
     if(smoothX===null){ smoothX=pos.x; smoothY=pos.y; }
     else{ smoothX += (pos.x-smoothX)*SMOOTH; smoothY += (pos.y-smoothY)*SMOOTH; }
 
-    if(showSkeleton){ hands_lm.forEach(drawSkeleton); }
-
+    if(showSkeleton) hands_lm.forEach(drawSkeleton);
     handStateEl.textContent = 'GESTURE: ' + gesture.toUpperCase() + (hands_lm.length>1 ? ' · 2 HANDS' : '');
 
-    // ---- two-hand pinch resize takes priority when both hands present ----
     if(twoHandMode && hands_lm.length===2 && grabbedPanel){
       const g2 = classifyGesture(hands_lm[1]);
       const p1 = screenPos(lm[8]);
       const p2 = screenPos(hands_lm[1][8]);
       if(gesture==='pinch' && g2==='pinch'){
         const d = Math.hypot(p1.x-p2.x, p1.y-p2.y);
-        if(!twoPinchActive){
-          twoPinchActive = true;
-          twoPinchStartDist = d;
-          twoPinchStartScale = grabbedPanel.scale;
-        } else {
+        if(!twoPinchActive){ twoPinchActive = true; twoPinchStartDist = d; twoPinchStartScale = grabbedPanel.scale; }
+        else{
           let scale = twoPinchStartScale * (d / twoPinchStartDist);
           scale = Math.max(0.5, Math.min(2.2, scale));
           grabbedPanel.scale = scale;
-          grabbedPanel.el.style.transform = `scale(${scale})`;
+          updateTransform(grabbedPanel);
         }
         drawReticle(p1.x,p1.y,'pinch');
         drawReticle(p2.x,p2.y,'pinch','#ffb454');
-        return; // skip normal single-hand handling this frame
-      } else {
-        twoPinchActive = false;
-        twoPinchStartDist = null;
-      }
+        return;
+      } else { twoPinchActive = false; twoPinchStartDist = null; }
     }
 
     drawReticle(smoothX, smoothY, gesture);
     updateHover(smoothX, smoothY);
 
     if(gesture === 'open' && !grabbedPanel){
-      if(trackSwipe(smoothX, smoothY)){
-        clearAllPanels();
-        closeSpawnMenu();
-      }
+      if(trackSwipe(smoothX, smoothY)){ clearAllPanels(); closeSpawnMenu(); }
       if(openHandHoldStart===null) openHandHoldStart = performance.now();
       const held = performance.now() - openHandHoldStart;
       if(held > 550 && !menuOpen) openSpawnMenu(smoothX, smoothY);
@@ -662,6 +762,9 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       } else {
         grabbedPanel.el.style.left = (smoothX + grabbedPanel.offsetX - grabbedPanel.el.offsetWidth/2) + 'px';
         grabbedPanel.el.style.top = (smoothY + grabbedPanel.offsetY - grabbedPanel.el.offsetHeight/2) + 'px';
+        grabbedPanel.baseX = grabbedPanel.el.offsetLeft;
+        grabbedPanel.baseY = grabbedPanel.el.offsetTop;
+        checkTrashHover(grabbedPanel);
       }
     } else {
       releaseGrab();
@@ -698,15 +801,12 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   async function rebuildLandmarker(){
     const old = landmarker;
     landmarker = null;
-    try{
-      landmarker = await buildLandmarker("GPU");
-    }catch(e1){
-      try{
-        landmarker = await buildLandmarker("CPU");
-      }catch(e2){
+    try{ landmarker = await buildLandmarker("GPU"); }
+    catch(e1){
+      try{ landmarker = await buildLandmarker("CPU"); }
+      catch(e2){
         modelState.textContent = 'MODEL FAILED TO LOAD — check your connection and reload';
-        modelState.classList.add('error');
-        modelState.style.display = 'block';
+        modelState.classList.add('error'); modelState.style.display = 'block';
         landmarker = null;
       }
     }
@@ -720,13 +820,12 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
         const nowMs = performance.now();
         const result = landmarker.detectForVideo(video, nowMs);
         onResults({ multiHandLandmarks: result && result.landmarks ? result.landmarks : [] });
-        if(modelState.style.display !== 'none'){
+        if(modelState.style.display !== 'none' && !modelState.classList.contains('error')){
           modelState.style.display = 'none';
         }
       }catch(err){
         modelState.textContent = 'TRACKING ERROR: ' + err.message;
-        modelState.classList.add('error');
-        modelState.style.display = 'block';
+        modelState.classList.add('error'); modelState.style.display = 'block';
       }
     }
     requestAnimationFrame(detectLoop);
@@ -737,7 +836,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     modelState.classList.remove('error');
     modelState.textContent = 'LOADING HAND-TRACKING MODEL…';
     await rebuildLandmarker();
-    if(!landmarker) return; // error already shown by rebuildLandmarker
+    if(!landmarker) return;
     modelState.textContent = 'MODEL READY';
     setTimeout(()=>{ if(!modelState.classList.contains('error')) modelState.style.display='none'; }, 1200);
     loopRunning = true;
@@ -747,10 +846,23 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   async function requestCamera(){
     errMsg.textContent = '';
     try{
-      const stream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480}, audio:false});
+      const stream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480, facingMode:'user'}, audio:false});
       currentStream = stream;
       video.srcObject = stream;
       camPermission.style.display = 'none';
+
+      try{
+        await video.play();
+      }catch(playErr){
+        // autoplay was blocked (common when this fires without a fresh tap,
+        // e.g. the auto-start-on-load path) — ask for one explicit tap instead
+        tapToStart.style.display = 'flex';
+        tapToStart.onclick = async ()=>{
+          try{ await video.play(); tapToStart.style.display = 'none'; startTracking(); }
+          catch(e2){ errMsg.textContent = 'Could not start video playback: ' + e2.message; camPermission.style.display='flex'; }
+        };
+        return;
+      }
       startTracking();
     }catch(err){
       showCameraError(err);
@@ -772,33 +884,23 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     camPermission.style.display = 'flex';
   }
 
-  // On load, check permission state up front so a previously-granted
-  // camera doesn't require the user to tap the button at all, and a
-  // previously-denied one shows the right instructions immediately.
   window.addEventListener('DOMContentLoaded', async ()=>{
     if(navigator.permissions && navigator.permissions.query){
       try{
         const status = await navigator.permissions.query({name:'camera'});
-        if(status.state === 'granted'){
-          requestCamera();
-        } else if(status.state === 'denied'){
-          showCameraError({name:'NotAllowedError'});
-        }
+        if(status.state === 'granted'){ requestCamera(); }
+        else if(status.state === 'denied'){ showCameraError({name:'NotAllowedError'}); }
         status.onchange = () => {
-          if(status.state === 'granted' && camPermission.style.display !== 'none'){
-            requestCamera();
-          }
+          if(status.state === 'granted' && camPermission.style.display !== 'none'){ requestCamera(); }
         };
-      }catch(e){ /* permissions API for camera not supported here; fall back to button */ }
+      }catch(e){ /* fall back to button */ }
     }
   });
 
   enableBtn.addEventListener('click', requestCamera);
 
   if('serviceWorker' in navigator){
-    window.addEventListener('load', ()=>{
-      navigator.serviceWorker.register('./sw.js').catch(()=>{});
-    });
+    window.addEventListener('load', ()=>{ navigator.serviceWorker.register('./sw.js').catch(()=>{}); });
   }
 })();
 </script>
