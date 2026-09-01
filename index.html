@@ -89,6 +89,28 @@
   #handsToggle{right:112px;}
   #soundToggle{right:216px;}
 
+  /* ---- narrow / portrait phones: stack the toggles instead of spreading them
+       across the top, and shrink text so nothing gets pushed off-canvas ---- */
+  @media (max-width: 600px){
+    #topbar{ max-width:56%; font-size:8.5px; gap:8px; top:12px; }
+    #topbar .brand{ font-size:11px; letter-spacing:2px; }
+    .hud-toggle{
+      position:absolute; right:8px; left:auto;
+      font-size:7.5px; padding:4px 6px; letter-spacing:0.6px;
+    }
+    #soundToggle{ top:10px; }
+    #handsToggle{ top:34px; }
+    #skeletonToggle{ top:58px; }
+    #statusline{ font-size:8px; bottom:10px; max-width:98%; line-height:1.5; }
+    #modelState{ font-size:9px; bottom:38px; padding:3px 8px; }
+    .panel{ width:180px; }
+    .panel .head{ font-size:8.5px; padding:5px 6px; }
+    .panel .body{ font-size:9px; padding:7px; }
+    .panel .headctl button{ width:16px;height:16px; font-size:8px; }
+    .corner-frame{ width:18px;height:18px; }
+    #trashZone{ width:46px;height:46px; font-size:7.5px; bottom:60px; }
+  }
+
   #modelState{
     position:absolute; bottom:44px; left:50%; transform:translateX(-50%);
     font-size:10px; letter-spacing:1.5px; color:var(--amber);
@@ -373,8 +395,11 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     const el = document.createElement('div');
     el.className = 'panel' + (tpl.theme ? ' theme-'+tpl.theme : '');
     el.dataset.id = 'p'+panelCount;
-    el.style.left = (x - 110) + 'px';
-    el.style.top = (y - 20) + 'px';
+    const pw = window.innerWidth < 600 ? 180 : 220;
+    const clampedX = Math.max(pw/2 + 4, Math.min(window.innerWidth - pw/2 - 4, x));
+    const clampedY = Math.max(30, Math.min(window.innerHeight - 60, y));
+    el.style.left = (clampedX - pw/2) + 'px';
+    el.style.top = (clampedY - 20) + 'px';
     el.innerHTML = `
       <div class="head">
         <span class="dot"></span>
@@ -391,7 +416,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     const rec = {
       el, tpl, grabbed:false, offsetX:0, offsetY:0, scale: opts.scale || 1,
       locked:false, shapeIdx:0, themeIdx: THEMES.indexOf(tpl.theme?('theme-'+tpl.theme):'') > -1 ? THEMES.indexOf(tpl.theme?('theme-'+tpl.theme):'') : 0,
-      baseX: x - 110, baseY: y - 20,
+      baseX: clampedX - pw/2, baseY: clampedY - 20,
       bobPhase: Math.random()*Math.PI*2,
       bobSpeed: 0.5 + Math.random()*0.4,
       bobAmp: 3 + Math.random()*3
@@ -406,7 +431,11 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     p.el.remove();
     const idx = panels.indexOf(p);
     if(idx>-1) panels.splice(idx,1);
-    if(!silent){ lastRemoved = {tpl:p.tpl, x:p.baseX+110, y:p.baseY+20}; playBeep(220,0.12,'square'); }
+    if(!silent){
+      const pw = window.innerWidth < 600 ? 180 : 220;
+      lastRemoved = {tpl:p.tpl, x:p.baseX+pw/2, y:p.baseY+20};
+      playBeep(220,0.12,'square');
+    }
   }
   function clearAllPanels(){ [...panels].forEach(p=>removePanel(p,true)); playBeep(200,0.2,'sawtooth'); }
 
@@ -509,9 +538,18 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   }
 
   window.addEventListener('load', ()=>{
-    spawnPanel(TEMPLATES[1], window.innerWidth*0.2, window.innerHeight*0.3);
-    spawnPanel(TEMPLATES[0], window.innerWidth*0.78, window.innerHeight*0.28);
-    spawnPanel(TEMPLATES[6], window.innerWidth*0.5, window.innerHeight*0.65);
+    const narrow = window.innerWidth < 600;
+    if(narrow){
+      // stack the starter panels vertically down the middle so none of
+      // them get clipped off the sides on a portrait phone screen
+      spawnPanel(TEMPLATES[1], window.innerWidth*0.5, window.innerHeight*0.22);
+      spawnPanel(TEMPLATES[0], window.innerWidth*0.5, window.innerHeight*0.47);
+      spawnPanel(TEMPLATES[6], window.innerWidth*0.5, window.innerHeight*0.72);
+    } else {
+      spawnPanel(TEMPLATES[1], window.innerWidth*0.2, window.innerHeight*0.3);
+      spawnPanel(TEMPLATES[0], window.innerWidth*0.78, window.innerHeight*0.28);
+      spawnPanel(TEMPLATES[6], window.innerWidth*0.5, window.innerHeight*0.65);
+    }
   });
 
   // idle ambient float animation for all panels not currently being manipulated
@@ -582,7 +620,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     spawnMenu.style.display='block';
     spawnMenu.style.left=x+'px'; spawnMenu.style.top=y+'px';
     spawnMenu.innerHTML='';
-    const radius=110;
+    const radius = Math.max(70, Math.min(110, Math.min(window.innerWidth, window.innerHeight) * 0.24));
     TEMPLATES.forEach((tpl,i)=>{
       const angle=(i/TEMPLATES.length)*Math.PI*2 - Math.PI/2;
       const ox=Math.cos(angle)*radius, oy=Math.sin(angle)*radius;
