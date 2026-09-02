@@ -205,61 +205,55 @@
     cursor:nwse-resize; touch-action:none;
   }
 
+  /* ---- spawnable shape objects: rendered with shaded gradients + glow
+       instead of real CSS 3D transforms. True preserve-3d/perspective is
+       genuinely unreliable across different Android WebView versions
+       (face flicker, z-fighting) — this reads as convincingly dimensional
+       while rendering identically and glitch-free everywhere. ---- */
   .shape-visual{
-    width:80%; aspect-ratio:1/1; margin:16px auto;
-    perspective:400px;
+    width:112px; height:112px; margin:18px auto; position:relative;
   }
-  /* ---- 3D wireframe sphere: several rings held at fixed 3D tilts, each
-       independently spinning in its own plane — reads as a genuine
-       rotating globe/gyroscope rather than a flat circle outline ---- */
-  .shape-visual.circle{ position:relative; transform-style:preserve-3d; }
-  .shape-visual.circle .ring-wrap{
-    position:absolute; inset:0; transform-style:preserve-3d;
+
+  /* glowing shaded orb, with two flattened "halo" rings spinning around it */
+  .shape-visual.circle .orb{
+    position:absolute; inset:16%;
+    border-radius:50%;
+    background: radial-gradient(circle at 34% 28%, #f2fdff 0%, var(--cyan) 26%, #0d3a48 76%, #041318 100%);
+    box-shadow:
+      0 0 22px 4px rgba(79,227,255,0.45),
+      inset -6px -8px 14px rgba(0,0,0,0.4),
+      inset 4px 6px 10px rgba(255,255,255,0.28);
+    animation: orbPulse 3.4s ease-in-out infinite;
   }
-  .shape-visual.circle .ring-wrap.a{ transform:rotateY(0deg); }
-  .shape-visual.circle .ring-wrap.b{ transform:rotateY(60deg); }
-  .shape-visual.circle .ring-wrap.c{ transform:rotateY(120deg) rotateX(18deg); }
+  @keyframes orbPulse{
+    0%,100%{ box-shadow:0 0 18px 3px rgba(79,227,255,0.35), inset -6px -8px 14px rgba(0,0,0,0.4), inset 4px 6px 10px rgba(255,255,255,0.28); }
+    50%{ box-shadow:0 0 30px 7px rgba(79,227,255,0.6), inset -6px -8px 14px rgba(0,0,0,0.4), inset 4px 6px 10px rgba(255,255,255,0.32); }
+  }
   .shape-visual.circle .ring{
     position:absolute; inset:0;
-    border:1.5px solid var(--cyan);
+    border:1.5px solid rgba(79,227,255,0.65);
     border-radius:50%;
-    box-shadow:0 0 10px rgba(79,227,255,0.35);
-    animation: ringSpin 8s linear infinite;
   }
-  .shape-visual.circle .ring-wrap.b .ring{ animation-duration:11s; animation-direction:reverse; opacity:0.85; }
-  .shape-visual.circle .ring-wrap.c .ring{ animation-duration:9.5s; opacity:0.7; }
-  .shape-visual.circle .core{
-    position:absolute; left:50%; top:50%; width:14%; height:14%;
-    background:var(--cyan); border-radius:50%;
-    transform:translate(-50%,-50%);
-    box-shadow:0 0 16px 4px rgba(79,227,255,0.7);
-  }
-  @keyframes ringSpin{ from{ transform:rotateZ(0deg); } to{ transform:rotateZ(360deg); } }
+  .shape-visual.circle .ring.r1{ animation: ringSpin1 9s linear infinite; }
+  .shape-visual.circle .ring.r2{ opacity:0.55; animation: ringSpin2 13s linear infinite; }
+  @keyframes ringSpin1{ from{ transform:rotate(10deg) scaleY(0.32); } to{ transform:rotate(370deg) scaleY(0.32); } }
+  @keyframes ringSpin2{ from{ transform:rotate(-30deg) scaleY(0.44); } to{ transform:rotate(330deg) scaleY(0.44); } }
 
-  /* ---- true 3D cube built from six positioned faces ---- */
-  .shape-visual.square{
-    position:relative;
-    transform-style:preserve-3d;
-    animation: cubeSpin 10s linear infinite;
+  /* glowing shaded gem: a rotated square with beveled lighting, reads as
+     a floating crystal/hologram rather than a flat diamond */
+  .shape-visual.square .gem{
+    position:absolute; inset:18%;
+    background: linear-gradient(135deg, #fff6e6 0%, var(--amber) 32%, #7a4a12 82%, #2e1c04 100%);
+    border:1px solid rgba(255,180,84,0.75);
+    border-radius:6px;
+    box-shadow:
+      0 0 22px 4px rgba(255,180,84,0.4),
+      inset -5px -6px 10px rgba(0,0,0,0.4),
+      inset 4px 5px 9px rgba(255,255,255,0.3);
+    animation: gemSpin 14s linear infinite, gemPulse 3.4s ease-in-out infinite;
   }
-  .shape-visual.square .face{
-    position:absolute; inset:0;
-    border:1.5px solid var(--amber);
-    background:rgba(255,180,84,0.07);
-    box-shadow:inset 0 0 16px rgba(255,180,84,0.15);
-  }
-  .shape-visual.square .face.front{ transform:translateZ(30px); }
-  .shape-visual.square .face.back{ transform:translateZ(-30px) rotateY(180deg); }
-  .shape-visual.square .face.right{ transform:rotateY(90deg) translateZ(30px); }
-  .shape-visual.square .face.left{ transform:rotateY(-90deg) translateZ(30px); }
-  .shape-visual.square .face.top{ transform:rotateX(90deg) translateZ(30px); }
-  .shape-visual.square .face.bottom{ transform:rotateX(-90deg) translateZ(30px); }
-  @keyframes cubeSpin{
-    from{ transform:rotateX(-20deg) rotateY(0deg); }
-    to{ transform:rotateX(-20deg) rotateY(360deg); }
-  }
-  .panel.theme-amber .shape-visual.circle .ring{ border-color:var(--amber); box-shadow:0 0 10px rgba(255,180,84,0.35); }
-  .panel.theme-amber .shape-visual.circle .core{ background:var(--amber); box-shadow:0 0 16px 4px rgba(255,180,84,0.7); }
+  @keyframes gemSpin{ from{ transform:rotate(45deg); } to{ transform:rotate(405deg); } }
+  @keyframes gemPulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.2); } }
 
   .spawn-menu-instance{ position:absolute; display:none; pointer-events:none; }
   .spawn-opt{
@@ -449,13 +443,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
     if(tpl.shapeOnly){
       const visualHTML = tpl.shapeOnly === 'circle'
-        ? `<div class="ring-wrap a"><div class="ring"></div></div>
-           <div class="ring-wrap b"><div class="ring"></div></div>
-           <div class="ring-wrap c"><div class="ring"></div></div>
-           <div class="core"></div>`
-        : `<div class="face front"></div><div class="face back"></div>
-           <div class="face right"></div><div class="face left"></div>
-           <div class="face top"></div><div class="face bottom"></div>`;
+        ? `<div class="ring r1"></div><div class="ring r2"></div><div class="orb"></div>`
+        : `<div class="gem"></div>`;
       el.innerHTML = `
         <div class="head">
           <span class="dot"></span><span style="flex:1"></span>
@@ -644,13 +633,13 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     menuEl.className = 'spawn-menu-instance';
     stage.appendChild(menuEl);
     return {
-      idx, smoothX:null, smoothY:null,
+      idx, smoothX:null, smoothY:null, dispX:null, dispY:null,
       grabbedPanel:null, hoveredPanel:null,
       openHandHoldStart:null,
       menuOpen:false, menuOrigin:{x:0,y:0}, hotOptionIndex:-1, menuEl,
       posHistory:[], swipeCooldown:0,
       resizingWith:null, resizeStartDist:null, resizeStartScale:1,
-      lastWristNorm:null, missingSince:null
+      lastWristNorm:null, missingSince:null, lastLm:null, gesture:null
     };
   }
   const hs = [ newHandState(0), newHandState(1) ];
@@ -841,6 +830,29 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     pts.forEach(pt=>{ ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI*2); ctx.fill(); });
   }
 
+  // runs every animation frame regardless of how often the ML model itself
+  // actually runs — this is what fixes the choppy/stuttering reticle. The
+  // heavy hand-tracking inference is throttled for performance, but the
+  // on-screen cursor still glides smoothly every frame by continuously
+  // easing toward whatever the last real detection reported.
+  function renderLoop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    hs.forEach((state, i) => {
+      if(state.smoothX === null) { state.dispX = state.dispY = null; return; }
+      if(state.dispX === null){ state.dispX = state.smoothX; state.dispY = state.smoothY; }
+      else{
+        state.dispX += (state.smoothX - state.dispX) * 0.5;
+        state.dispY += (state.smoothY - state.dispY) * 0.5;
+      }
+      drawReticle(state.dispX, state.dispY, state.gesture || 'neutral', i);
+    });
+    if(showSkeleton){
+      hs.forEach((state, i) => { if(state.lastLm) drawSkeleton(state.lastLm, i); });
+    }
+    requestAnimationFrame(renderLoop);
+  }
+  requestAnimationFrame(renderLoop);
+
   function trackSwipe(state, x,y){
     const now = performance.now();
     state.posHistory.push({x,y,t:now});
@@ -856,7 +868,9 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
   function processHand(state, lm, otherHandLm){
     state.lastWristNorm = {x:lm[0].x, y:lm[0].y};
+    state.lastLm = lm;
     const gesture = classifyGesture(lm);
+    state.gesture = gesture;
     const pos = screenPos(lm[8]);
     if(state.smoothX===null){ state.smoothX=pos.x; state.smoothY=pos.y; }
     else{ state.smoothX += (pos.x-state.smoothX)*0.4; state.smoothY += (pos.y-state.smoothY)*0.4; }
@@ -872,7 +886,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
           state.resizingWith.scale = scale;
           setScale(state.resizingWith);
         }
-        drawReticle(state.smoothX, state.smoothY, 'pinch', state.idx);
         return;
       } else {
         state.resizingWith = null;
@@ -880,7 +893,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       }
     }
 
-    drawReticle(state.smoothX, state.smoothY, gesture, state.idx);
     updateHover(state, state.smoothX, state.smoothY);
 
     if(gesture === 'open' && !state.grabbedPanel){
@@ -929,6 +941,9 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     closeSpawnMenu(state);
     state.openHandHoldStart = null;
     state.smoothX = state.smoothY = null;
+    state.dispX = state.dispY = null;
+    state.lastLm = null;
+    state.gesture = null;
     state.posHistory = [];
     state.lastWristNorm = null;
     state.missingSince = null;
@@ -936,7 +951,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   }
 
   function onResults(results){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
     const hands_lm = (results.multiHandLandmarks || []);
 
     if(hands_lm.length === 0){
@@ -946,8 +960,6 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       return;
     }
     linkStateEl.textContent = 'LOCKED';
-
-    if(showSkeleton) hands_lm.forEach((lm,i)=>drawSkeleton(lm,i));
 
     // stable identity matching: a hand keeps its assigned slot across frames
     // by proximity to where it was last seen, instead of raw array order
