@@ -150,7 +150,19 @@
     pointer-events:auto;
   }
   .panel.shape-round{ clip-path:none; border-radius:16px; }
+  .panel.panel-shape{ clip-path:none; border-radius:14px; }
 
+  .panel.floaty{
+    animation: floatBob var(--bdur, 6s) ease-in-out infinite;
+    animation-delay: var(--bdelay, 0s);
+    will-change: transform;
+  }
+  @keyframes floatBob{
+    0%,100%{ transform:translate(0,0); }
+    25%{ transform:translate(calc(var(--bdx,4px) * 0.6), calc(var(--bdy,4px) * -1)); }
+    50%{ transform:translate(calc(var(--bdx,4px) * -1), calc(var(--bdy,4px) * 0.3)); }
+    75%{ transform:translate(calc(var(--bdx,4px) * 0.3), calc(var(--bdy,4px) * 0.8)); }
+  }
   .panel.hover{ border-color:#8fe9ff; box-shadow:0 0 16px rgba(143,233,255,0.25); }
   .panel.armed{ border-color:var(--amber); box-shadow:0 0 26px rgba(255,180,84,0.35), inset 0 0 24px rgba(255,180,84,0.08); }
   .panel.armed2{ border-color:var(--violet); box-shadow:0 0 26px rgba(185,139,255,0.35); }
@@ -194,14 +206,60 @@
   }
 
   .shape-visual{
-    width:80%; aspect-ratio:1/1; margin:14px auto;
-    border:2px solid var(--cyan);
-    background:rgba(79,227,255,0.06);
-    box-shadow:0 0 20px rgba(79,227,255,0.25), inset 0 0 20px rgba(79,227,255,0.08);
+    width:80%; aspect-ratio:1/1; margin:16px auto;
+    perspective:400px;
   }
-  .shape-visual.circle{ border-radius:50%; }
-  .shape-visual.square{ border-radius:4px; }
-  .panel.theme-amber .shape-visual{ border-color:var(--amber); box-shadow:0 0 20px rgba(255,180,84,0.3), inset 0 0 20px rgba(255,180,84,0.1); background:rgba(255,180,84,0.06); }
+  /* ---- 3D wireframe sphere: several rings held at fixed 3D tilts, each
+       independently spinning in its own plane — reads as a genuine
+       rotating globe/gyroscope rather than a flat circle outline ---- */
+  .shape-visual.circle{ position:relative; transform-style:preserve-3d; }
+  .shape-visual.circle .ring-wrap{
+    position:absolute; inset:0; transform-style:preserve-3d;
+  }
+  .shape-visual.circle .ring-wrap.a{ transform:rotateY(0deg); }
+  .shape-visual.circle .ring-wrap.b{ transform:rotateY(60deg); }
+  .shape-visual.circle .ring-wrap.c{ transform:rotateY(120deg) rotateX(18deg); }
+  .shape-visual.circle .ring{
+    position:absolute; inset:0;
+    border:1.5px solid var(--cyan);
+    border-radius:50%;
+    box-shadow:0 0 10px rgba(79,227,255,0.35);
+    animation: ringSpin 8s linear infinite;
+  }
+  .shape-visual.circle .ring-wrap.b .ring{ animation-duration:11s; animation-direction:reverse; opacity:0.85; }
+  .shape-visual.circle .ring-wrap.c .ring{ animation-duration:9.5s; opacity:0.7; }
+  .shape-visual.circle .core{
+    position:absolute; left:50%; top:50%; width:14%; height:14%;
+    background:var(--cyan); border-radius:50%;
+    transform:translate(-50%,-50%);
+    box-shadow:0 0 16px 4px rgba(79,227,255,0.7);
+  }
+  @keyframes ringSpin{ from{ transform:rotateZ(0deg); } to{ transform:rotateZ(360deg); } }
+
+  /* ---- true 3D cube built from six positioned faces ---- */
+  .shape-visual.square{
+    position:relative;
+    transform-style:preserve-3d;
+    animation: cubeSpin 10s linear infinite;
+  }
+  .shape-visual.square .face{
+    position:absolute; inset:0;
+    border:1.5px solid var(--amber);
+    background:rgba(255,180,84,0.07);
+    box-shadow:inset 0 0 16px rgba(255,180,84,0.15);
+  }
+  .shape-visual.square .face.front{ transform:translateZ(30px); }
+  .shape-visual.square .face.back{ transform:translateZ(-30px) rotateY(180deg); }
+  .shape-visual.square .face.right{ transform:rotateY(90deg) translateZ(30px); }
+  .shape-visual.square .face.left{ transform:rotateY(-90deg) translateZ(30px); }
+  .shape-visual.square .face.top{ transform:rotateX(90deg) translateZ(30px); }
+  .shape-visual.square .face.bottom{ transform:rotateX(-90deg) translateZ(30px); }
+  @keyframes cubeSpin{
+    from{ transform:rotateX(-20deg) rotateY(0deg); }
+    to{ transform:rotateX(-20deg) rotateY(360deg); }
+  }
+  .panel.theme-amber .shape-visual.circle .ring{ border-color:var(--amber); box-shadow:0 0 10px rgba(255,180,84,0.35); }
+  .panel.theme-amber .shape-visual.circle .core{ background:var(--amber); box-shadow:0 0 16px 4px rgba(255,180,84,0.7); }
 
   .spawn-menu-instance{ position:absolute; display:none; pointer-events:none; }
   .spawn-opt{
@@ -381,7 +439,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     opts = opts || {};
     panelCount++;
     const el = document.createElement('div');
-    el.className = 'panel' + (tpl.theme ? ' theme-'+tpl.theme : '');
+    el.className = 'panel' + (tpl.shapeOnly ? ' panel-shape' : '') + (tpl.theme ? ' theme-'+tpl.theme : '');
     el.dataset.id = 'p'+panelCount;
     const pw = window.innerWidth < 600 ? 170 : 210;
     const clampedX = Math.max(pw/2 + 4, Math.min(window.innerWidth - pw/2 - 4, x));
@@ -390,12 +448,20 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     el.style.top = (clampedY - 20) + 'px';
 
     if(tpl.shapeOnly){
+      const visualHTML = tpl.shapeOnly === 'circle'
+        ? `<div class="ring-wrap a"><div class="ring"></div></div>
+           <div class="ring-wrap b"><div class="ring"></div></div>
+           <div class="ring-wrap c"><div class="ring"></div></div>
+           <div class="core"></div>`
+        : `<div class="face front"></div><div class="face back"></div>
+           <div class="face right"></div><div class="face left"></div>
+           <div class="face top"></div><div class="face bottom"></div>`;
       el.innerHTML = `
         <div class="head">
           <span class="dot"></span><span style="flex:1"></span>
           ${makeControlsHTML(false)}
         </div>
-        <div class="shape-visual ${tpl.shapeOnly}"></div>
+        <div class="shape-visual ${tpl.shapeOnly}">${visualHTML}</div>
         <div class="resize-handle"></div>
       `;
     } else {
@@ -413,15 +479,21 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       `;
     }
     panelLayer.appendChild(el);
+    // ambient float is a pure CSS animation (GPU-composited, costs ~nothing)
+    // instead of a JS loop touching every panel's style every frame
+    el.style.setProperty('--bdur', (5 + Math.random()*3).toFixed(2) + 's');
+    el.style.setProperty('--bdelay', (-Math.random()*6).toFixed(2) + 's');
+    el.style.setProperty('--bdx', (3 + Math.random()*3).toFixed(1) + 'px');
+    el.style.setProperty('--bdy', (3 + Math.random()*3).toFixed(1) + 'px');
+    el.classList.add('floaty');
+    el.style.scale = String(opts.scale || 1);
+
     const rec = {
       el, tpl, grabbed:false, grabbedBy:null, offsetX:0, offsetY:0, scale: opts.scale || 1,
       shapeIdx:0, themeIdx:0,
       baseX: clampedX - pw/2, baseY: clampedY - 20,
       curX: clampedX - pw/2, curY: clampedY - 20,
-      targetX: clampedX - pw/2, targetY: clampedY - 20,
-      bobPhase: Math.random()*Math.PI*2,
-      bobSpeed: 0.5 + Math.random()*0.4,
-      bobAmp: 3 + Math.random()*3
+      targetX: clampedX - pw/2, targetY: clampedY - 20
     };
     panels.push(rec);
     wirePanelInteractions(rec);
@@ -446,8 +518,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     return {x:r.left+r.width/2, y:r.top+r.height/2, r};
   }
 
-  function updateTransform(p, bobX, bobY){
-    p.el.style.transform = `translate(${bobX||0}px, ${bobY||0}px) scale(${p.scale})`;
+  function setScale(p){
+    p.el.style.scale = String(p.scale);
   }
 
   function cycleShape(p){
@@ -477,6 +549,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     head.addEventListener('pointerdown', (e)=>{
       dragging = true;
       p.grabbed = true;
+      p.el.classList.remove('floaty');
       head.setPointerCapture(e.pointerId);
       sx = e.clientX; sy = e.clientY;
       ox = p.el.offsetLeft; oy = p.el.offsetTop;
@@ -496,6 +569,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       if(!dragging) return;
       dragging = false;
       p.grabbed = false;
+      if(panels.includes(p)) p.el.classList.add('floaty');
       maybeDropInTrash(p);
     });
 
@@ -510,7 +584,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       if(!resizing) return;
       const delta = (e.clientX - rsx) / 150;
       p.scale = Math.max(0.5, Math.min(2.2, rsw + delta));
-      updateTransform(p);
+      setScale(p);
     });
     handle.addEventListener('pointerup', ()=>{ resizing = false; });
   }
@@ -542,27 +616,20 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     }
   });
 
-  function idleFloatLoop(){
-    const t = performance.now()/1000;
-    panels.forEach(p=>{
-      if(p.grabbed){
-        // ease toward the hand's current target instead of snapping —
-        // this is what makes dragging feel smooth rather than jittery
-        p.curX += (p.targetX - p.curX) * 0.35;
-        p.curY += (p.targetY - p.curY) * 0.35;
-        p.el.style.left = p.curX + 'px';
-        p.el.style.top = p.curY + 'px';
-        updateTransform(p, 0, 0);
-        return;
-      }
-      p.curX = p.el.offsetLeft; p.curY = p.el.offsetTop;
-      const bobY = Math.sin(t*p.bobSpeed + p.bobPhase) * p.bobAmp;
-      const bobX = Math.cos(t*p.bobSpeed*0.7 + p.bobPhase) * (p.bobAmp*0.5);
-      updateTransform(p, bobX, bobY);
-    });
-    requestAnimationFrame(idleFloatLoop);
+  function dragChaseLoop(){
+    // only touches panels actively being held right now — idle panels are
+    // animated purely by CSS (see .floaty / @keyframes floatBob above),
+    // which costs nothing on the JS/layout thread
+    for(const p of panels){
+      if(!p.grabbed) continue;
+      p.curX += (p.targetX - p.curX) * 0.35;
+      p.curY += (p.targetY - p.curY) * 0.35;
+      p.el.style.left = p.curX + 'px';
+      p.el.style.top = p.curY + 'px';
+    }
+    requestAnimationFrame(dragChaseLoop);
   }
-  requestAnimationFrame(idleFloatLoop);
+  requestAnimationFrame(dragChaseLoop);
 
   window.addEventListener('keydown', (e)=>{
     if(e.key === 'z' && lastRemoved){
@@ -715,6 +782,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     state.grabbedPanel = best;
     best.grabbed = true;
     best.grabbedBy = state.idx;
+    best.el.classList.remove('floaty');
     best.el.classList.add(state.idx===0 ? 'armed' : 'armed2');
     best.el.classList.remove('hover');
     bringToFront(best);
@@ -729,6 +797,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
         state.grabbedPanel.grabbed=false;
         state.grabbedPanel.grabbedBy=null;
         state.grabbedPanel.el.classList.remove('armed','armed2');
+        state.grabbedPanel.el.classList.add('floaty');
       }
       state.grabbedPanel=null;
       trashZone.classList.remove('active');
@@ -790,7 +859,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     const gesture = classifyGesture(lm);
     const pos = screenPos(lm[8]);
     if(state.smoothX===null){ state.smoothX=pos.x; state.smoothY=pos.y; }
-    else{ state.smoothX += (pos.x-state.smoothX)*0.28; state.smoothY += (pos.y-state.smoothY)*0.28; }
+    else{ state.smoothX += (pos.x-state.smoothX)*0.4; state.smoothY += (pos.y-state.smoothY)*0.4; }
 
     // two-hand resize in progress on a panel this hand doesn't primarily own
     if(state.resizingWith){
@@ -801,7 +870,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
           let scale = state.resizeStartScale * (d / state.resizeStartDist);
           scale = Math.max(0.5, Math.min(2.2, scale));
           state.resizingWith.scale = scale;
-          updateTransform(state.resizingWith);
+          setScale(state.resizingWith);
         }
         drawReticle(state.smoothX, state.smoothY, 'pinch', state.idx);
         return;
@@ -933,9 +1002,15 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     if(old){ try{ old.close(); }catch(e){} }
   }
 
+  let detectFrameCounter = 0;
   function detectLoop(){
     if(!loopRunning) return;
-    if(landmarker && video.readyState >= 2){
+    // run the (expensive) ML inference every other frame instead of every
+    // frame — the pointer-smoothing/easing already in place means motion
+    // still looks continuous, but this roughly halves the heaviest cost
+    // in the whole app and is the single biggest lag fix available here
+    detectFrameCounter++;
+    if(landmarker && video.readyState >= 2 && detectFrameCounter % 2 === 0){
       try{
         const nowMs = performance.now();
         const result = landmarker.detectForVideo(video, nowMs);
@@ -966,7 +1041,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   async function requestCamera(){
     errMsg.textContent = '';
     try{
-      const stream = await navigator.mediaDevices.getUserMedia({video:{width:640,height:480, facingMode:'user'}, audio:false});
+      const stream = await navigator.mediaDevices.getUserMedia({video:{width:480,height:360, facingMode:'user'}, audio:false});
       currentStream = stream;
       video.srcObject = stream;
       camPermission.style.display = 'none';
