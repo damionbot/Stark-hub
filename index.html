@@ -150,7 +150,13 @@
     pointer-events:auto;
   }
   .panel.shape-round{ clip-path:none; border-radius:16px; }
-  .panel.panel-shape{ clip-path:none; border-radius:14px; }
+  .panel.panel-shape{
+    clip-path:none; border-radius:14px;
+    background:transparent; border:none; box-shadow:none;
+  }
+  .panel.panel-shape .head{
+    background:transparent; border-bottom:none;
+  }
 
   .panel.floaty{
     animation: floatBob var(--bdur, 6s) ease-in-out infinite;
@@ -213,47 +219,69 @@
   .shape-visual{
     width:112px; height:112px; margin:18px auto; position:relative;
   }
+  /* hologram "projector base" — a soft flattened glow beneath the object,
+     like it's being beamed up from a floor projector rather than just
+     floating with no grounding, which is what sells the VR/AR feel */
+  .shape-visual::after{
+    content:'';
+    position:absolute; left:50%; bottom:-6px;
+    width:70%; height:14px;
+    transform:translateX(-50%);
+    border-radius:50%;
+    filter:blur(4px);
+  }
+  .shape-visual.circle::after{ background:radial-gradient(ellipse, rgba(79,227,255,0.55) 0%, transparent 75%); }
+  .shape-visual.square::after{ background:radial-gradient(ellipse, rgba(255,180,84,0.5) 0%, transparent 75%); }
 
-  /* glowing shaded orb, with two flattened "halo" rings spinning around it */
+  /* glowing shaded orb, with two flattened "halo" rings spinning around it,
+     each carrying a small bright particle riding along the ring */
   .shape-visual.circle .orb{
     position:absolute; inset:16%;
     border-radius:50%;
     background: radial-gradient(circle at 34% 28%, #f2fdff 0%, var(--cyan) 26%, #0d3a48 76%, #041318 100%);
     box-shadow:
-      0 0 22px 4px rgba(79,227,255,0.45),
+      0 0 34px 10px rgba(79,227,255,0.4),
+      0 0 60px 22px rgba(79,227,255,0.18),
       inset -6px -8px 14px rgba(0,0,0,0.4),
       inset 4px 6px 10px rgba(255,255,255,0.28);
     animation: orbPulse 3.4s ease-in-out infinite;
   }
   @keyframes orbPulse{
-    0%,100%{ box-shadow:0 0 18px 3px rgba(79,227,255,0.35), inset -6px -8px 14px rgba(0,0,0,0.4), inset 4px 6px 10px rgba(255,255,255,0.28); }
-    50%{ box-shadow:0 0 30px 7px rgba(79,227,255,0.6), inset -6px -8px 14px rgba(0,0,0,0.4), inset 4px 6px 10px rgba(255,255,255,0.32); }
+    0%,100%{ box-shadow:0 0 26px 6px rgba(79,227,255,0.32), 0 0 50px 16px rgba(79,227,255,0.14), inset -6px -8px 14px rgba(0,0,0,0.4), inset 4px 6px 10px rgba(255,255,255,0.28); }
+    50%{ box-shadow:0 0 42px 14px rgba(79,227,255,0.55), 0 0 70px 28px rgba(79,227,255,0.22), inset -6px -8px 14px rgba(0,0,0,0.4), inset 4px 6px 10px rgba(255,255,255,0.32); }
   }
   .shape-visual.circle .ring{
     position:absolute; inset:0;
     border:1.5px solid rgba(79,227,255,0.65);
     border-radius:50%;
   }
+  .shape-visual.circle .ring::before{
+    content:''; position:absolute; top:-2px; left:50%;
+    width:5px; height:5px; margin-left:-2.5px;
+    background:#eaffff; border-radius:50%;
+    box-shadow:0 0 8px 3px rgba(79,227,255,0.9);
+  }
   .shape-visual.circle .ring.r1{ animation: ringSpin1 9s linear infinite; }
   .shape-visual.circle .ring.r2{ opacity:0.55; animation: ringSpin2 13s linear infinite; }
   @keyframes ringSpin1{ from{ transform:rotate(10deg) scaleY(0.32); } to{ transform:rotate(370deg) scaleY(0.32); } }
   @keyframes ringSpin2{ from{ transform:rotate(-30deg) scaleY(0.44); } to{ transform:rotate(330deg) scaleY(0.44); } }
 
-  /* glowing shaded gem: a rotated square with beveled lighting, reads as
-     a floating crystal/hologram rather than a flat diamond */
+  /* glowing shaded gem: a rotated square with beveled lighting and a
+     bigger ambient bloom, reads as a floating crystal/hologram */
   .shape-visual.square .gem{
     position:absolute; inset:18%;
     background: linear-gradient(135deg, #fff6e6 0%, var(--amber) 32%, #7a4a12 82%, #2e1c04 100%);
     border:1px solid rgba(255,180,84,0.75);
     border-radius:6px;
     box-shadow:
-      0 0 22px 4px rgba(255,180,84,0.4),
+      0 0 32px 8px rgba(255,180,84,0.38),
+      0 0 56px 20px rgba(255,180,84,0.16),
       inset -5px -6px 10px rgba(0,0,0,0.4),
       inset 4px 5px 9px rgba(255,255,255,0.3);
     animation: gemSpin 14s linear infinite, gemPulse 3.4s ease-in-out infinite;
   }
   @keyframes gemSpin{ from{ transform:rotate(45deg); } to{ transform:rotate(405deg); } }
-  @keyframes gemPulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.2); } }
+  @keyframes gemPulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.22); } }
 
   .spawn-menu-instance{ position:absolute; display:none; pointer-events:none; }
   .spawn-opt{
@@ -307,7 +335,7 @@
     <button id="skeletonToggle" class="hud-toggle off">SKEL: OFF</button>
     <div id="modelState">LOADING HAND-TRACKING MODEL…</div>
     <div id="statusline">
-      <div><b>OPEN HAND</b> HOLD → MENU (either hand) &nbsp;·&nbsp; <b>PINCH</b> → GRAB &nbsp;·&nbsp; <b>FIST</b> ON PANEL → DISMISS &nbsp;·&nbsp; <b>BOTH HANDS PINCH SAME PANEL</b> → RESIZE &nbsp;·&nbsp; TOUCH WORKS TOO</div>
+      <div><b>PEACE SIGN</b> HOLD → MENU &nbsp;·&nbsp; <b>PINCH</b> → GRAB &nbsp;·&nbsp; <b>FIST</b> ON PANEL → DISMISS &nbsp;·&nbsp; <b>OPEN HAND SWIPE</b> → CLEAR ALL &nbsp;·&nbsp; <b>BOTH HANDS PINCH SAME PANEL</b> → RESIZE &nbsp;·&nbsp; TOUCH WORKS TOO</div>
       <div id="handState">NO HAND DETECTED</div>
     </div>
   </div>
@@ -698,10 +726,35 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       dist(ringTip, ringMcp)/handSize, dist(pinkyTip, pinkyMcp)/handSize
     ];
     const avgCurl = curl.reduce((a,b)=>a+b,0)/4;
+
+    // peace sign: index + middle clearly extended, ring + pinky clearly
+    // curled — a deliberate, distinctive pose that's very unlikely to
+    // happen by accident during normal hand movement, which is exactly
+    // why it's used as the menu trigger instead of a generic open palm
+    const isPeace = fingerExtension[0] > 1.05 && fingerExtension[1] > 1.05
+      && curl[2] < 0.6 && curl[3] < 0.6;
+
     if(pinchDist < 0.42) return 'pinch';
+    if(isPeace) return 'peace';
     if(avgCurl < 0.55) return 'fist';
     if(avgExt > 1.35) return 'open';
     return 'neutral';
+  }
+
+  // raw per-frame classification is noisy — a single misread frame can
+  // flip the gesture for an instant and fire an action by accident. This
+  // requires the same gesture to win a majority vote over the last few
+  // detections before it's treated as "real," which is what fixes the
+  // flickery/unreliable feel without adding noticeable input lag.
+  function stableGesture(state, rawGesture){
+    if(!state.gestureBuffer) state.gestureBuffer = [];
+    state.gestureBuffer.push(rawGesture);
+    if(state.gestureBuffer.length > 4) state.gestureBuffer.shift();
+    const counts = {};
+    state.gestureBuffer.forEach(g => { counts[g] = (counts[g]||0) + 1; });
+    let best = rawGesture, bestCount = 0;
+    Object.keys(counts).forEach(g => { if(counts[g] > bestCount){ bestCount = counts[g]; best = g; } });
+    return best;
   }
 
   function screenPos(landmark){
@@ -804,8 +857,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
   function drawReticle(x,y,gesture,handIdx){
     const baseColors = handIdx===1
-      ? { pinch:'#ffb454', fist:'#ff5d5d', open:'#b98bff', neutral:'#b98bff' }
-      : { pinch:'#ffb454', fist:'#ff5d5d', open:'#4fe3ff', neutral:'#4fe3ff' };
+      ? { pinch:'#ffb454', fist:'#ff5d5d', open:'#b98bff', peace:'#6dffb0', neutral:'#b98bff' }
+      : { pinch:'#ffb454', fist:'#ff5d5d', open:'#4fe3ff', peace:'#6dffb0', neutral:'#4fe3ff' };
     const c = baseColors[gesture] || baseColors.neutral;
     ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
     const r = gesture==='pinch' ? 10 : 18;
@@ -841,8 +894,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       if(state.smoothX === null) { state.dispX = state.dispY = null; return; }
       if(state.dispX === null){ state.dispX = state.smoothX; state.dispY = state.smoothY; }
       else{
-        state.dispX += (state.smoothX - state.dispX) * 0.5;
-        state.dispY += (state.smoothY - state.dispY) * 0.5;
+        state.dispX += (state.smoothX - state.dispX) * 0.32;
+        state.dispY += (state.smoothY - state.dispY) * 0.32;
       }
       drawReticle(state.dispX, state.dispY, state.gesture || 'neutral', i);
     });
@@ -869,7 +922,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   function processHand(state, lm, otherHandLm){
     state.lastWristNorm = {x:lm[0].x, y:lm[0].y};
     state.lastLm = lm;
-    const gesture = classifyGesture(lm);
+    const gesture = stableGesture(state, classifyGesture(lm));
     state.gesture = gesture;
     const pos = screenPos(lm[8]);
     if(state.smoothX===null){ state.smoothX=pos.x; state.smoothY=pos.y; }
@@ -895,14 +948,23 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
     updateHover(state, state.smoothX, state.smoothY);
 
-    if(gesture === 'open' && !state.grabbedPanel){
-      if(trackSwipe(state, state.smoothX, state.smoothY)){ clearAllPanels(); closeSpawnMenu(state); }
+    // peace sign (✌️) opens the spawn menu — deliberately a distinctive,
+    // rarely-accidental pose instead of a generic open palm, so the menu
+    // doesn't spring open every time you just move your hand around
+    if(gesture === 'peace' && !state.grabbedPanel){
       if(state.openHandHoldStart===null) state.openHandHoldStart = performance.now();
       const held = performance.now() - state.openHandHoldStart;
-      if(held > 550 && !state.menuOpen) openSpawnMenu(state, state.smoothX, state.smoothY);
+      if(held > 300 && !state.menuOpen) openSpawnMenu(state, state.smoothX, state.smoothY);
       if(state.menuOpen) updateSpawnMenuHot(state, state.smoothX, state.smoothY);
     } else {
-      if(gesture !== 'open') state.openHandHoldStart = null;
+      state.openHandHoldStart = null;
+    }
+
+    // a genuine open palm is still used only for the fast swipe-to-clear
+    // gesture, kept separate from the menu trigger
+    if(gesture === 'open' && !state.grabbedPanel){
+      if(trackSwipe(state, state.smoothX, state.smoothY)){ clearAllPanels(); closeSpawnMenu(state); }
+    } else {
       state.posHistory = [];
     }
 
@@ -923,7 +985,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
       }
     } else {
       releaseGrab(state);
-      if(state.menuOpen && gesture !== 'open') closeSpawnMenu(state);
+      if(state.menuOpen && gesture !== 'peace') closeSpawnMenu(state);
     }
 
     if(gesture === 'fist') tryDismiss(state.smoothX, state.smoothY);
