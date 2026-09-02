@@ -154,6 +154,14 @@
     clip-path:none; border-radius:14px;
     background:transparent; border:none; box-shadow:none;
   }
+  /* satisfying little "pop" the instant something is conjured — makes
+     spawning feel like a real materialization instead of just appearing */
+  .panel.spawning{ animation: spawnPop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1); }
+  @keyframes spawnPop{
+    0%{ opacity:0; scale: 0.3; filter:brightness(2.5); }
+    55%{ opacity:1; scale: 1.08; }
+    100%{ opacity:1; scale: 1; filter:brightness(1); }
+  }
   .panel.panel-shape .head{
     background:transparent; border-bottom:none;
   }
@@ -335,7 +343,7 @@
     <button id="skeletonToggle" class="hud-toggle off">SKEL: OFF</button>
     <div id="modelState">LOADING HAND-TRACKING MODEL…</div>
     <div id="statusline">
-      <div><b>PEACE SIGN</b> HOLD → MENU &nbsp;·&nbsp; <b>PINCH</b> → GRAB &nbsp;·&nbsp; <b>FIST</b> ON PANEL → DISMISS &nbsp;·&nbsp; <b>OPEN HAND SWIPE</b> → CLEAR ALL &nbsp;·&nbsp; <b>BOTH HANDS PINCH SAME PANEL</b> → RESIZE &nbsp;·&nbsp; TOUCH WORKS TOO</div>
+      <div><b>OPEN HAND</b> HOLD → MENU &nbsp;·&nbsp; <b>PINCH</b> → GRAB &nbsp;·&nbsp; <b>FIST</b> ON PANEL → DISMISS &nbsp;·&nbsp; <b>SWIPE</b> → CLEAR ALL &nbsp;·&nbsp; <b>BOTH HANDS PINCH SAME PANEL</b> → RESIZE &nbsp;·&nbsp; TOUCH WORKS TOO</div>
       <div id="handState">NO HAND DETECTED</div>
     </div>
   </div>
@@ -504,6 +512,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     el.style.setProperty('--bdy', (3 + Math.random()*3).toFixed(1) + 'px');
     el.classList.add('floaty');
     el.style.scale = String(opts.scale || 1);
+    el.classList.add('spawning');
+    setTimeout(()=>el.classList.remove('spawning'), 500);
 
     const rec = {
       el, tpl, grabbed:false, grabbedBy:null, offsetX:0, offsetY:0, scale: opts.scale || 1,
@@ -515,6 +525,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     panels.push(rec);
     wirePanelInteractions(rec);
     playBeep(660, 0.1);
+    spawnRipple(x, y, tpl.theme==='amber' ? '255,180,84' : '79,227,255');
     return rec;
   }
 
@@ -710,7 +721,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     return matched;
   }
 
-  function classifyGesture(lm){
+  function classifyGesture(lm, prevGesture){
     const wrist = lm[0];
     const thumbTip=lm[4], indexTip=lm[8], middleTip=lm[12], ringTip=lm[16], pinkyTip=lm[20];
     const indexMcp=lm[5], middleMcp=lm[9], ringMcp=lm[13], pinkyMcp=lm[17];
@@ -727,34 +738,19 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     ];
     const avgCurl = curl.reduce((a,b)=>a+b,0)/4;
 
-    // peace sign: index + middle clearly extended, ring + pinky clearly
-    // curled — a deliberate, distinctive pose that's very unlikely to
-    // happen by accident during normal hand movement, which is exactly
-    // why it's used as the menu trigger instead of a generic open palm
-    const isPeace = fingerExtension[0] > 1.05 && fingerExtension[1] > 1.05
-      && curl[2] < 0.6 && curl[3] < 0.6;
+    // hysteresis: use a wider "stay" threshold than "enter" threshold for
+    // whichever gesture we were already in. This kills boundary jitter
+    // (the hand hovering right at the edge of a threshold and flickering
+    // between two gestures) without adding the input lag a multi-frame
+    // vote buffer would — every frame is still fully live.
+    const pinchIn = prevGesture === 'pinch' ? 0.48 : 0.42;
+    const fistIn = prevGesture === 'fist' ? 0.62 : 0.55;
+    const openIn = prevGesture === 'open' ? 1.25 : 1.35;
 
-    if(pinchDist < 0.42) return 'pinch';
-    if(isPeace) return 'peace';
-    if(avgCurl < 0.55) return 'fist';
-    if(avgExt > 1.35) return 'open';
+    if(pinchDist < pinchIn) return 'pinch';
+    if(avgCurl < fistIn) return 'fist';
+    if(avgExt > openIn) return 'open';
     return 'neutral';
-  }
-
-  // raw per-frame classification is noisy — a single misread frame can
-  // flip the gesture for an instant and fire an action by accident. This
-  // requires the same gesture to win a majority vote over the last few
-  // detections before it's treated as "real," which is what fixes the
-  // flickery/unreliable feel without adding noticeable input lag.
-  function stableGesture(state, rawGesture){
-    if(!state.gestureBuffer) state.gestureBuffer = [];
-    state.gestureBuffer.push(rawGesture);
-    if(state.gestureBuffer.length > 4) state.gestureBuffer.shift();
-    const counts = {};
-    state.gestureBuffer.forEach(g => { counts[g] = (counts[g]||0) + 1; });
-    let best = rawGesture, bestCount = 0;
-    Object.keys(counts).forEach(g => { if(counts[g] > bestCount){ bestCount = counts[g]; best = g; } });
-    return best;
   }
 
   function screenPos(landmark){
@@ -831,6 +827,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     const c = panelCenter(best);
     state.offsetX = c.x - x;
     state.offsetY = c.y - y;
+    spawnRipple(x, y, state.idx===0 ? '79,227,255' : '185,139,255');
   }
   function releaseGrab(state){
     if(state.grabbedPanel){
@@ -857,8 +854,8 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
   function drawReticle(x,y,gesture,handIdx){
     const baseColors = handIdx===1
-      ? { pinch:'#ffb454', fist:'#ff5d5d', open:'#b98bff', peace:'#6dffb0', neutral:'#b98bff' }
-      : { pinch:'#ffb454', fist:'#ff5d5d', open:'#4fe3ff', peace:'#6dffb0', neutral:'#4fe3ff' };
+      ? { pinch:'#ffb454', fist:'#ff5d5d', open:'#b98bff', neutral:'#b98bff' }
+      : { pinch:'#ffb454', fist:'#ff5d5d', open:'#4fe3ff', neutral:'#4fe3ff' };
     const c = baseColors[gesture] || baseColors.neutral;
     ctx.strokeStyle = c; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.9;
     const r = gesture==='pinch' ? 10 : 18;
@@ -888,8 +885,52 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   // heavy hand-tracking inference is throttled for performance, but the
   // on-screen cursor still glides smoothly every frame by continuously
   // easing toward whatever the last real detection reported.
+  // ---- ambient atmosphere: drifting light motes + grab ripples ----
+  const ambientParticles = [];
+  for(let i=0;i<26;i++){
+    ambientParticles.push({
+      x: Math.random()*window.innerWidth,
+      y: Math.random()*window.innerHeight,
+      vx: (Math.random()-0.5)*6,
+      vy: (Math.random()-0.5)*6 - 2,
+      r: 0.6 + Math.random()*1.4,
+      alpha: 0.15 + Math.random()*0.25
+    });
+  }
+  const ripples = [];
+  function spawnRipple(x,y,rgb){ ripples.push({x,y,rgb,start:performance.now()}); }
+
+  function drawAmbience(dt){
+    ctx.fillStyle = 'rgba(79,227,255,0.5)';
+    ambientParticles.forEach(p=>{
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      if(p.x<0) p.x=window.innerWidth; if(p.x>window.innerWidth) p.x=0;
+      if(p.y<0) p.y=window.innerHeight; if(p.y>window.innerHeight) p.y=0;
+      ctx.globalAlpha = p.alpha;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    const now = performance.now();
+    for(let i=ripples.length-1;i>=0;i--){
+      const r = ripples[i];
+      const t = (now - r.start) / 500;
+      if(t >= 1){ ripples.splice(i,1); continue; }
+      const radius = 6 + t*40;
+      ctx.strokeStyle = `rgba(${r.rgb},${(1-t)*0.7})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(r.x, r.y, radius, 0, Math.PI*2); ctx.stroke();
+    }
+  }
+
+  let lastFrameTime = performance.now();
   function renderLoop(){
+    const now = performance.now();
+    const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+    lastFrameTime = now;
+
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawAmbience(dt);
     hs.forEach((state, i) => {
       if(state.smoothX === null) { state.dispX = state.dispY = null; return; }
       if(state.dispX === null){ state.dispX = state.smoothX; state.dispY = state.smoothY; }
@@ -922,9 +963,20 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   function processHand(state, lm, otherHandLm){
     state.lastWristNorm = {x:lm[0].x, y:lm[0].y};
     state.lastLm = lm;
-    const gesture = stableGesture(state, classifyGesture(lm));
+    const gesture = classifyGesture(lm, state.gesture);
     state.gesture = gesture;
-    const pos = screenPos(lm[8]);
+
+    // small moving-average pre-filter on the raw fingertip position before
+    // the main smoothing pass — knocks down single-frame landmark noise
+    // (the actual source of "itchy" jitter) without adding real lag
+    const rawPos = screenPos(lm[8]);
+    if(!state.rawHistory) state.rawHistory = [];
+    state.rawHistory.push(rawPos);
+    if(state.rawHistory.length > 3) state.rawHistory.shift();
+    const pos = {
+      x: state.rawHistory.reduce((s,p)=>s+p.x,0) / state.rawHistory.length,
+      y: state.rawHistory.reduce((s,p)=>s+p.y,0) / state.rawHistory.length
+    };
     if(state.smoothX===null){ state.smoothX=pos.x; state.smoothY=pos.y; }
     else{ state.smoothX += (pos.x-state.smoothX)*0.4; state.smoothY += (pos.y-state.smoothY)*0.4; }
 
@@ -948,23 +1000,14 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
 
     updateHover(state, state.smoothX, state.smoothY);
 
-    // peace sign (✌️) opens the spawn menu — deliberately a distinctive,
-    // rarely-accidental pose instead of a generic open palm, so the menu
-    // doesn't spring open every time you just move your hand around
-    if(gesture === 'peace' && !state.grabbedPanel){
-      if(state.openHandHoldStart===null) state.openHandHoldStart = performance.now();
-      const held = performance.now() - state.openHandHoldStart;
-      if(held > 300 && !state.menuOpen) openSpawnMenu(state, state.smoothX, state.smoothY);
-      if(state.menuOpen) updateSpawnMenuHot(state, state.smoothX, state.smoothY);
-    } else {
-      state.openHandHoldStart = null;
-    }
-
-    // a genuine open palm is still used only for the fast swipe-to-clear
-    // gesture, kept separate from the menu trigger
     if(gesture === 'open' && !state.grabbedPanel){
       if(trackSwipe(state, state.smoothX, state.smoothY)){ clearAllPanels(); closeSpawnMenu(state); }
+      if(state.openHandHoldStart===null) state.openHandHoldStart = performance.now();
+      const held = performance.now() - state.openHandHoldStart;
+      if(held > 550 && !state.menuOpen) openSpawnMenu(state, state.smoothX, state.smoothY);
+      if(state.menuOpen) updateSpawnMenuHot(state, state.smoothX, state.smoothY);
     } else {
+      if(gesture !== 'open') state.openHandHoldStart = null;
       state.posHistory = [];
     }
 
@@ -1007,6 +1050,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     state.lastLm = null;
     state.gesture = null;
     state.posHistory = [];
+    state.rawHistory = [];
     state.lastWristNorm = null;
     state.missingSince = null;
     if(state.hoveredPanel){ state.hoveredPanel.el.classList.remove('hover'); state.hoveredPanel = null; }
