@@ -721,7 +721,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     return matched;
   }
 
-  function classifyGesture(lm, prevGesture){
+  function classifyGesture(lm){
     const wrist = lm[0];
     const thumbTip=lm[4], indexTip=lm[8], middleTip=lm[12], ringTip=lm[16], pinkyTip=lm[20];
     const indexMcp=lm[5], middleMcp=lm[9], ringMcp=lm[13], pinkyMcp=lm[17];
@@ -738,18 +738,9 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
     ];
     const avgCurl = curl.reduce((a,b)=>a+b,0)/4;
 
-    // hysteresis: use a wider "stay" threshold than "enter" threshold for
-    // whichever gesture we were already in. This kills boundary jitter
-    // (the hand hovering right at the edge of a threshold and flickering
-    // between two gestures) without adding the input lag a multi-frame
-    // vote buffer would — every frame is still fully live.
-    const pinchIn = prevGesture === 'pinch' ? 0.48 : 0.42;
-    const fistIn = prevGesture === 'fist' ? 0.62 : 0.55;
-    const openIn = prevGesture === 'open' ? 1.25 : 1.35;
-
-    if(pinchDist < pinchIn) return 'pinch';
-    if(avgCurl < fistIn) return 'fist';
-    if(avgExt > openIn) return 'open';
+    if(pinchDist < 0.42) return 'pinch';
+    if(avgCurl < 0.55) return 'fist';
+    if(avgExt > 1.35) return 'open';
     return 'neutral';
   }
 
@@ -963,7 +954,7 @@ import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@m
   function processHand(state, lm, otherHandLm){
     state.lastWristNorm = {x:lm[0].x, y:lm[0].y};
     state.lastLm = lm;
-    const gesture = classifyGesture(lm, state.gesture);
+    const gesture = classifyGesture(lm);
     state.gesture = gesture;
 
     // small moving-average pre-filter on the raw fingertip position before
